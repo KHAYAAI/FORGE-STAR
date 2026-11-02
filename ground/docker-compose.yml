@@ -1,0 +1,95 @@
+# FORGE STAR — Stage 0 ground & platform stack (local dev)
+#   docker compose up -d                 # core: TimescaleDB, Kafka, ingest, device simulator
+#   docker compose --profile full up -d  # + ThingsBoard (device management, dashboards; ~2 GB RAM)
+#   docker compose --profile radio up -d # + SatNOGS client (needs an SDR on USB)
+# Data path: devices / ground station -> Kafka (iot.uplink) -> ingest -> TimescaleDB (+ ThingsBoard)
+name: forge-star
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.17.2-pg16
+    environment:
+      POSTGRES_USER: forge
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-forge-dev-only}
+      POSTGRES_DB: forgestar
+    volumes:
+      - tsdb:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports: ["5432:5432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U forge -d forgestar"]
+      interval: 5s
+      retries: 20
+
+  kafka:
+    image: apache/kafka:3.8.0
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+    ports: ["29092:29092"]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1"]
+      interval: 5s
+      retries: 30
+
+  thingsboard:
+    # Device management + customer dashboards. Standalone image with its own Postgres.
+    image: thingsboard/tb-postgres:3.8.1
+    environment:
+      TB_QUEUE_TYPE: in-memory
+    ports: ["8080:9090", "1883:1883"]
+    volumes:
+      - tb-data:/data
+      - tb-logs:/var/log/thingsboard
+    profiles: ["full", "radio"]
+
+  ingest:
+    build: ./ingest
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      PG_DSN: postgresql://forge:${PG_PASSWORD:-forge-dev-only}@timescaledb:5432/forgestar
+      TB_URL: http://thingsboard:9090
+    depends_on:
+      timescaledb: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    restart: unless-stopped
+
+  simulator:
+    # Fake field devices (mine pumps, farm sensors, collars, AIS vessels) so the pipeline has data.
+    build: ./simulator
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      DEVICES: "50"
+      INTERVAL_S: "5"
+    depends_on:
+      kafka: {condition: service_healthy}
+    restart: unless-stopped
+
+  satnogs-client:
+    # Real ground station. Register at network.satnogs.org first and fill the env vars.
+    image: librespace/satnogs-client:master
+    profiles: ["radio"]
+    devices: ["/dev/bus/usb:/dev/bus/usb"]
+    environment:
+      SATNOGS_API_TOKEN: ${SATNOGS_API_TOKEN:-}
+      SATNOGS_STATION_ID: ${SATNOGS_STATION_ID:-}
+      SATNOGS_STATION_LAT: ${SATNOGS_STATION_LAT:--26.2}
+      SATNOGS_STATION_LON: ${SATNOGS_STATION_LON:-28.0}
+      SATNOGS_STATION_ELEV: ${SATNOGS_STATION_ELEV:-1750}
+      SATNOGS_SOAPY_RX_DEVICE: ${SATNOGS_SOAPY_RX_DEVICE:-driver=rtlsdr}
+      SATNOGS_RX_SAMP_RATE: ${SATNOGS_RX_SAMP_RATE:-2.048e6}
+      SATNOGS_ANTENNA: ${SATNOGS_ANTENNA:-RX}
+    restart: unless-stopped
+
+volumes:
+  tsdb: {}
+  tb-data: {}
+  tb-logs: {}

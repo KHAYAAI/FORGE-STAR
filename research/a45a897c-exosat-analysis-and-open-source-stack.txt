@@ -1,0 +1,545 @@
+Yes — we can talk about copying the business, not just the website.
+Here’s a clear-eyed breakdown.
+What Exosat is actually doing
+They are building a sovereign / neutral LEO communications constellation positioned as an alternative to Starlink (and Chinese systems). Core pillars:
+
+ITAR/EAR-free satellites (no U.S.-origin controlled content) so they can manufacture and launch anywhere
+Much lower satellite cost target (~$300k class vs traditional multi-million)
+Focus on non-U.S./non-China customers: governments, national operators, and enterprises in Asia, Middle East, Central Asia, etc.
+Direct-to-cell, IoT-NTN, and broadband
+Pre-filed spectrum + offer of turnkey or leased capacity
+Early stage: YC, LOIs claimed in the hundreds of millions, first launch targeted April 2027
+
+Can you copy this business?
+In principle, yes. Business models and market positioning are not protected by copyright. Plenty of companies have tried (and some are still trying) to be “the non-American / non-Chinese Starlink.”
+In practice, it is extremely hard. This is one of the most capital-, talent-, and regulation-intensive industries that exists.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+FactorReality checkCapitalFull constellation = billions. Even a meaningful initial constellation is hundreds of millions.SpectrumITU filings are competitive and slow. Exosat already has filings; newcomers face congestion and coordination fights.TechnologyPhased arrays, software-defined radios, radiation-tolerant electronics, high-volume manufacturing of low-cost sats. Hard to do at 1/10th the cost without serious engineering depth.LaunchCapacity is still constrained. Being ITAR-free helps with non-U.S. launchers, but you still need reliable, affordable rides.CustomersGovernments and national operators move slowly and are risk-averse. LOIs are easy; binding contracts and actual payments are harder.TalentAerospace + RF + satellite systems people who will work outside the big U.S./European primes are scarce.TimelineEven aggressive teams take years to first useful service.
+Realistic ways to approach “copying” it
+
+Direct competitor (hard mode)
+Raise serious money, assemble a real satellite team, file spectrum, build prototypes, secure launch. Possible if you have deep domain expertise + access to capital and manufacturing partners in the right jurisdictions.
+Niche version (more realistic)
+Regional constellation (e.g., focused on Africa, Southeast Asia, or Middle East only)
+IoT / narrowband only (much cheaper satellites and simpler ground segment)
+Pure capacity reseller / virtual operator on someone else’s constellation
+Ground segment + software + integration layer for sovereign operators
+Turnkey “constellation-in-a-box” for governments that want control but don’t want to build everything themselves
+
+Adjacent / enabling plays
+Low-cost satellite buses or payloads that are deliberately ITAR-free
+Manufacturing or assembly hubs in friendly jurisdictions
+Spectrum consulting + filing services
+Sovereign ground stations / teleport networks
+
+
+Bottom line
+Copying the positioning (“neutral, sovereign, ITAR-free, lower-cost LEO connectivity for the rest of the world”) is doable and has clear demand.
+
+Copying the full execution (thousands of satellites, global-scale constellation) is a multi-year, multi-hundred-million (or billion) dollar undertaking that requires the right team, jurisdiction, and capital from day one.
+
+To give you useful next steps, I need a bit more from you:
+
+What’s your starting point? (team size/expertise, capital access, location/jurisdiction, existing relationships in space/telecom/government)
+Are you aiming for a full constellation play, or a more focused/niche version?
+Timeline and risk tolerance?
+Any specific geography or use-case you’re most interested in (e.g., Africa, Middle East, IoT-only, direct-to-cell, etc.)?
+
+Once I know that, I can help you stress-test the idea, map the real requirements, or sketch a more achievable version of the business.explain all the things that are required to do this also explain their businessHere’s a clear, complete explanation of both sides.
+1. What is Exosat’s Business?
+Exosat is a Singapore-based (with YC roots) early-stage company building a neutral, sovereign alternative to Starlink.
+Core Idea
+Many countries and companies do not want their critical connectivity controlled by either the United States (Starlink / SpaceX) or China (Guowang, Qianfan, etc.). Exosat positions itself as the “non-aligned” option — a constellation that governments and operators in Asia, the Middle East, Central Asia, and other emerging markets can trust more than the two superpowers.
+How They Plan to Make Money
+
+Sell capacity / connectivity to mobile network operators, device OEMs, and enterprises (Direct-to-Cell, IoT, broadband).
+Offer turnkey sovereign constellations — customers can lease capacity or buy/operate their own network built with Exosat satellites.
+Longer-term vision: use the constellation’s distributed compute for low-latency AI inference (robots, autonomous vehicles in remote areas).
+
+Key Technical & Strategic Bets
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ElementDetailsCost target~$300k per satellite (vs traditional $5M+) with 3–5 year lifeDesign philosophyZero ITAR/EAR-controlled content → can manufacture and launch anywhereOrbitVery low LEO (420–450 km) for better link budgets, lower latency (~15 ms), milder radiationServicesDirect-to-Cell (NTN), IoT, Ka-band broadbandSpectrumITU filing for ~11,000 satellites (claimed as one of the largest outside US/China)ManufacturingOverseas / global supply chain, automotive-grade parts where possibleTraction (as of late 2026)First launch booked for April 2027, $400M+ in LOIs across ~6 nations, small team (founder has prior satellite experience)
+Business model in short: Low-cost, geopolitically neutral satellites → sell connectivity and/or full sovereign networks to customers who refuse to depend on Starlink or Chinese systems.
+
+2. Everything Required to Build a Similar Business
+Building a real competing LEO constellation is one of the hardest things you can attempt in technology. Here is the full list of what is required, broken into major categories.
+A. Technical / Engineering Requirements
+
+Satellite design (bus + payload): power systems, propulsion, attitude control, thermal, radiation tolerance, phased-array antennas, software-defined radios.
+Ability to design for very low cost while still surviving LEO.
+High-volume manufacturing process (not building one-off satellites).
+Ground segment: gateways, network operations center, user terminals / integration with existing 3GPP devices.
+Constellation management software (collision avoidance, spectrum sharing, traffic routing, software updates).
+End-to-end system simulation and testing capabilities.
+
+B. Regulatory & Spectrum (Critical Path Item)
+
+ITU satellite network filing (through a national administration — Singapore, Luxembourg, etc.).
+Coordination with other satellite operators (very time-consuming).
+National licenses in every country you want to serve (market access).
+Frequency assignments for user links (L/S-band for D2C/IoT, Ka/Ku for broadband) and feeder links.
+Compliance with ITU milestone requirements (you must launch a percentage of the constellation by certain deadlines or lose the filing).
+Export control strategy (the whole point of being ITAR/EAR-free).
+
+C. Manufacturing & Supply Chain
+
+Access to reliable, low-cost component suppliers that have zero U.S.-origin controlled technology.
+Ability to manufacture or assemble at scale in friendly jurisdictions.
+Quality control and testing facilities (vibration, thermal vacuum, EMC, etc.).
+Long-term supplier contracts for critical parts (solar panels, batteries, thrusters, antennas, processors).
+
+D. Launch
+
+Secured launch contracts (rideshares or dedicated).
+Ability to launch from non-U.S. providers if you want full ITAR freedom (India, Europe, China, private providers, etc.).
+Launch cadence that matches your constellation build-out plan.
+Insurance for launches and in-orbit operations.
+
+E. Capital
+Realistic capital needs (very approximate):
+
+Prototype / first few satellites + first launch: tens of millions
+Initial commercial constellation (dozens to low hundreds of satellites): hundreds of millions
+Full mega-constellation: multiple billions
+
+You need investors who understand deep tech + space timelines and are comfortable with geopolitical risk.
+F. Team
+Minimum critical roles:
+
+Founder/CEO with space or hard-tech credibility
+Satellite systems engineers
+RF / antenna / payload specialists
+Software / constellation operations people
+Regulatory / spectrum experts
+Manufacturing / supply-chain leads
+Sales people who can sell to governments and national telecom operators
+Finance + legal people experienced in international space deals
+
+G. Go-to-Market & Customers
+
+Relationships with national telecom operators, ministries of communications, and defense/civil government buyers.
+Ability to navigate slow government procurement cycles.
+Partnerships with device OEMs that have NTN (Non-Terrestrial Network) chipsets.
+Clear value proposition on price, sovereignty, and control.
+
+H. Corporate & Legal Structure
+
+Choice of jurisdiction (Singapore is popular for neutrality; others use Luxembourg, UAE, etc.).
+Careful structuring to avoid creating a U.S. nexus if ITAR avoidance is a core strategy.
+International contracts, liability frameworks, insurance, data sovereignty agreements.
+
+I. Operations & Sustainability
+
+Collision avoidance and space traffic management.
+End-of-life deorbit plans (increasingly required).
+Cybersecurity of the constellation and ground systems.
+Continuous spectrum monitoring and interference management.
+
+
+Realistic Phased Path (What Successful Teams Actually Do)
+
+Year 0–1: Small team, raise seed, design & build first prototype satellite, file spectrum, secure first launch slot, sign LOIs.
+Year 1–2: Launch 1–few satellites, demonstrate basic service (usually IoT first), raise Series A/B.
+Year 2–4: Deploy initial commercial constellation (dozens–hundreds of satellites), start generating real revenue, expand spectrum rights and market access.
+Year 4+: Scale to full constellation and broader services (broadband, edge compute, etc.).
+
+
+Bottom line:
+
+Exosat’s business is a high-ambition, geopolitically timed bet on the demand for “neutral” orbital infrastructure. The idea is sound and the market need is real. Executing it, however, requires mastering satellite engineering, international spectrum regulation, high-volume manufacturing, launch logistics, government sales, and raising very large amounts of capital — all at the same time.
+Would you like me to go deeper on any specific part (spectrum process, cost structure, team composition, realistic capital raises, alternative lower-risk versions of the business, etc.)?find all the open source projects and platforms we can combine to build this!Here’s a practical, structured map of the best open-source projects and platforms you can combine to build toward an Exosat-style LEO communications constellation.
+I’ve organized them by the major layers of the system. These are the strongest, actively useful ones as of late 2026.
+1. Flight Software (Onboard Satellite Software)
+These are the most mature options for the satellite’s brain:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProjectDescriptionBest ForNotesNASA cFS (Core Flight System) + OpenSatKitIndustry-standard modular flight software framework used on real NASA missionsProduction-grade CubeSat / SmallSatExtremely mature, large ecosystemNASA F´ (FPrime)Component-based flight software frameworkModern, highly modular systemsUsed by multiple university and commercial CubeSatsLibreCube / UniSatModular platform covering CanSat → 12U CubeSatRapid prototyping + multi-form-factorStrong community, good documentationBIRDS Project (Kyushu Tech)Full open-source CubeSat bus (hardware + software) from a very successful seriesLow-cost, flight-proven designsExcellent for learning and early prototypesCubeSat Space Protocol (CSP)Lightweight network protocol for satellitesInter-subsystem communicationWidely used in European and university sats
+2. Ground Segment & Mission Control
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProjectDescriptionBest ForSatNOGS (Libre Space Foundation)Global network of open-source ground stations + scheduling backendDistributed ground network, telemetry receptionBall Aerospace COSMOSFull command & control + test systemMission operations, scripting, telemetryTinyGSUltra-low-cost LoRa-based global networkIoT / narrowband telemetryOpen MCT (NASA)Modern mission control visualization frameworkDashboards and data visualizationGPredict + HamlibClassic satellite tracking + rotator controlAntenna pointing and pass prediction
+3. Constellation Simulation & Network Emulation
+Critical for design, coverage analysis, and protocol testing:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProjectDescriptionStrengthLeoEMReal-time LEO satellite network emulatorHigh-fidelity network stack testingOpenSNContainer-based large-scale LEO network emulatorScalable (tested with 4000+ satellites)StarPerf SimulatorMega-constellation performance simulatorCoverage, latency, capacity analysisleosatellites (OMNeT++/INET)LEO simulator based on OS3 frameworkProtocol and routing researchCosmicBeats Simulator (Microsoft)Multi-domain space simulation (networking + compute + IoT)End-to-end scenarios including Direct-to-Satellite IoTsatconsimConstellation impact simulatorCoverage and interference studies
+4. 5G / NTN (Non-Terrestrial Network) Stack
+This is crucial for Direct-to-Cell and modern IoT:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProjectDescriptionNotesOpenAirInterface (OAI) 5G + NTN patchesFull open 5G RAN with NTN supportStrongest open 5G stack for satellitesOCUDU RAN + Open NTN TestbedOpen 5G stack with GEO/LEO NTN scenariosGood for end-to-end testingfree5GCOpen-source 5G Core (3GPP R17)Pair with OAI or srsRANOpenNTN (Sionna extension)3GPP TR 38.811 NTN channel modelsLink-level simulationns-3-NTNFull-stack 5G NTN simulator on ns-3 + 5G-LENASystem-level studiessrsRAN (with community NTN work)Another strong open 5G RANGrowing NTN support
+5. Orbit Determination, Propagation & Mission Design
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ProjectDescriptionOrekit (Java) + Python wrappersIndustry-standard open-source flight dynamics libraryorbdetpyPython orbit determination built on OrekitGMAT (NASA)Full mission design, optimization, and navigation toolEphemerista (Libre Space)Modern orbital mechanics + mission analysispoliastro + SatLibPython-friendly orbital mechanicsSkyfieldExcellent TLE propagation and time handling
+6. RF, SDR & Protocol Tools
+
+GNU Radio + gr-satellites / SatDump
+SoapySDR ecosystem
+CubeSat Space Protocol (CSP) (already mentioned)
+Various open LoRa / FSK / BPSK demodulators used by SatNOGS and TinyGS
+
+Recommended Combination Stack (Practical Starting Point)
+Early prototype / IoT-focused path (fastest to something real):
+
+Flight software → NASA cFS or F´ + CSP
+Ground network → SatNOGS + TinyGS
+Simulation → LeoEM or CosmicBeats
+Communications → LoRa / custom narrowband first, then move to 5G NTN
+
+Full Direct-to-Cell / Broadband path (harder):
+
+Flight software → F´ or cFS
+5G stack → OpenAirInterface + free5GC + OpenNTN channel models
+Network emulation → OpenSN or LeoEM
+Mission design → Orekit / GMAT + StarPerf
+Ground → SatNOGS + custom high-performance gateways
+
+
+Important reality check
+
+Open source gets you extremely far on software, simulation, protocols, and even some flight-proven bus designs. It does not solve:
+
+Radiation-hardened or space-qualified hardware
+High-volume low-cost satellite manufacturing
+Spectrum filings and regulatory coordination
+Reliable launch access
+Phased-array antenna design and production at scale
+
+Would you like me to create a prioritized shortlist (with GitHub links and recommended learning order) based on whether you want to start with IoT/narrowband or go straight for Direct-to-Cell / 5G NTN?how far will this take us?Honest assessment: How far the open-source stack will take you
+Short Answer
+It will take you very far on the software, simulation, protocol, and early prototype side — far enough to design, simulate, test, and even fly early technology-demonstration satellites and a small IoT/narrowband service.
+It will not take you all the way to a commercial mega-constellation that competes with Exosat (or Starlink) on its own. Significant proprietary work, capital, hardware expertise, and regulatory effort will still be required.
+Detailed Breakdown by Layer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+LayerHow Far Open Source Gets YouRemaining GapSystem design & simulationExtremely far. You can model full constellations, coverage, latency, capacity, routing, and 5G NTN behavior at high fidelity.Minor (mainly validation against real measurements)Flight softwareVery far. NASA cFS, F´, and related tools are flight-proven on real missions. Suitable for CubeSats and SmallSats.Hardening, certification, and optimization for high-volume productionGround segment & operationsFar for early stages. SatNOGS + COSMOS + custom tools can run a real network of stations and control satellites.Scaling to commercial reliability, high-availability NOC, and global gateway networkCommunications protocols (IoT / narrowband)Very far. You can build and fly a functional IoT / messaging service.Spectrum licensing and real-world interference management5G / Direct-to-Cell (NTN)Moderately far in simulation and lab. OAI + free5GC + channel models let you prototype end-to-end.Significant. Real phased-array payloads, 3GPP certification, and production-grade RF are still mostly closed.Satellite hardware / busModerate for prototypes (especially 1U–6U). BIRDS, LibreCube, etc. give solid starting points.Large. Radiation, thermal, power, propulsion, and low-cost high-volume manufacturing remain hard.Phased-array antennas & high-throughput payloadLimited. Mostly research-level or partial open designs.Very large. This is one of the core proprietary advantages of companies like Exosat/Starlink.Manufacturing & supply chainAlmost none.Critical. ITAR-free, high-volume, low-cost production is a major independent challenge.Spectrum, regulatory, launchAlmost none.Critical. ITU filings, national licenses, and launch contracts are outside open source.
+Realistic Milestones You Can Reach
+With strong open-source + a small skilled team you can realistically achieve:
+
+Full digital twin / system simulation of a constellation (coverage, capacity, latency, routing) — within months.
+Working lab prototype of satellite + ground + 5G NTN or IoT link — 6–18 months.
+Flight of 1–few technology demonstration satellites (CubeSat/SmallSat class) carrying your software and basic payload — 1.5–3 years (if you can fund the hardware and launch).
+Early commercial IoT / messaging service with a small number of satellites and ground stations — possible with moderate capital.
+Proof-of-concept Direct-to-Cell in controlled tests or limited regions — possible but difficult.
+
+What becomes very hard without major additional resources:
+
+Scaling to hundreds or thousands of satellites
+Achieving the ~$300k per satellite cost target at volume
+Building production-grade phased arrays and high-capacity payloads
+Securing and coordinating large ITU filings
+Winning and serving sovereign government / national operator contracts at scale
+Building the full operational reliability and support organization
+
+Bottom Line Relative to Exosat
+
+Software + architecture + early validation: Open source can get you 60–80% of the way (sometimes more).
+Full commercial product that matches Exosat’s ambition: Open source gets you maybe 25–40% of the total effort. The remaining 60–75% is hardware engineering, manufacturing scale-up, capital, regulatory, and go-to-market.
+
+Open source is an excellent accelerator and risk reducer, especially in the early years. It dramatically lowers the barrier to proving the concept and attracting talent/investors. It does not eliminate the need for serious engineering, capital, and execution on the physical and regulatory sides.
+Would you like me to map a realistic 3–5 year roadmap showing exactly which open-source pieces to use at each stage, and where you will need to invest in custom/proprietary work?
