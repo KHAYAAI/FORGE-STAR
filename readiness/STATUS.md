@@ -24,8 +24,9 @@ Earliest finish: **2032-01-01** (month 61).
 |---|---|---|---|
 | As planned | 2032-01-01 | 61 | O1 → O2 → O3 → F2 → R2 → R3 → R4 → F3 → V1 |
 | Seed raise runs alongside the HDG-anchor search (`parallel_seed`) | 2031-12-01 | 60 | C2 → C4 → F2 → R2 → R3 → R4 → F3 → V1 |
+| Seed raised on signed LOIs (not paying customers), anchor in parallel (`seed_on_lois`) | 2031-10-01 | 58 | S1 → S2 → S3 → L2 → L3 → R2 → R3 → R4 → F3 → V1 |
 | + own demonstrator built in parallel with the hosted payload (`parallel_demo`) | 2030-12-01 | 48 | C2 → C4 → F2 → R2 → R4 → F3 → V1 |
-| + Series A on the hosted-payload result, tighter builds (`fast_track`) | 2030-07-01 | 43 | C2 → C4 → F2 → R2 → R3 → F3 → V1 |
+| Seed on LOIs + demonstrator in parallel + Series A on the hosted-payload result, tighter builds (`fast_track`) | 2030-07-01 | 43 | S1 → S2 → S4 → S5 → V1 |
 
 ## Late (should have finished)
 

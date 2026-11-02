@@ -53,6 +53,19 @@ int main(int argc, char **argv) {
     CHECK(total == FORGE_SF_CAPACITY && sf.count == 0, "drain sends every stored record once");
     CHECK(blocks == sf.seq && blocks > 1, "one sequence number per link block");
 
+    /* acks: decode the Python-made ACK frame, then drop acked records from a fresh store */
+    forge_ack_key_t keys[8]; uint16_t gw = 0;
+    int nk = forge_ack_decode(VEC_ACK, sizeof VEC_ACK, keys, 8, &gw);
+    CHECK(nk == 2 && gw == 4 && keys[0].short_id == VEC_RECS[0].sid && keys[1].t_created == VEC_RECS[2].t, "ACK frame from Python decodes");
+    static uint8_t bad[sizeof VEC_ACK]; memcpy(bad, VEC_ACK, sizeof bad); bad[20] ^= 1;
+    CHECK(forge_ack_decode(bad, sizeof bad, keys, 8, &gw) == -1, "corrupted ACK rejected");
+    forge_record_t r3[VEC_NREC]; for (int i = 0; i < VEC_NREC; i++) load(&r3[i], i);
+    forge_sf_init(&sf, 3);
+    for (int i = 0; i < VEC_NREC; i++) forge_sf_store(&sf, &r3[i]);
+    forge_ack_decode(VEC_ACK, sizeof VEC_ACK, keys, 8, &gw);
+    CHECK(forge_sf_apply_acks(&sf, keys, 2) == 2 && sf.count == 1 && sf.rec[sf.head].short_id == VEC_RECS[1].sid,
+          "acked records dropped on board, others kept in order");
+
     printf(fails ? "\n%d FAILED\n" : "\nall passed\n", fails);
     return fails ? 1 : 0;
 }

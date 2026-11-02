@@ -253,7 +253,20 @@ Gateways: Hartebeesthoek, Cape Town, Walvis Bay, Mauritius. A 16° mask needs th
 - **Gateways are the cheap lever** for sites far from SA. They can be leased passes or partner stations relaying data to the SA platform, so data still lands in SA.
 - **The 60-minute SLA is reachable across SADC** with about 36–48 satellites, the isoflux antenna and 4 gateways.
 - **Equatorial sites (Nairobi, Lagos) stay around 2 hours.** They need a low-inclination plane or equatorial gateways before an SLA is offered there.
-- **Devices must re-send until acknowledged.** Handing each message to a single satellite can make waits worse, because that satellite may be heading away from every gateway.
+- **Devices must re-send until acknowledged.** Handing each message to a single satellite can make waits worse, because that satellite may be heading away from every gateway. This is now built: ACK frames, gateway duplicate removal, satellites dropping acked copies, devices stopping re-sends. In a live platform run on 24 satellites with SA gateways only, 95% of messages landed within about **40 minutes**, against 85 minutes with the single-copy policy.
+
+#### Closing the equatorial gap
+
+`sim/equatorial_study.py` (isoflux antenna, re-send until acked) gives 95% delivery time in minutes:
+
+| Option | Jhb | Agulhas | Maputo | Lusaka | Dar | Nairobi | Lagos | Extra capex vs 36 sats |
+|---|---|---|---|---|---|---|---|---|
+| **36 @45°, 4 gateways** | 44 | 10 | 71 | 12 | 44 | 110 | 116 | — |
+| **+ Malindi + Lagos gateways** | 44 | 10 | 69 | 10 | 44 | 96 | 60 | ~$0.7M |
+| **+ 6 sats @10° + Malindi + Lagos** | 44 | 10 | 69 | 10 | 21 | 10 | 25 | ~$5.2M |
+| **42 @45° + 6 @10° + Malindi + Lagos** | 8 | 6 | 8 | 26 | 11 | 9 | 11 | ~$9.7M |
+
+**Stage 3 design: 42 satellites at 45° plus 6 in a 10° plane (48 in total) and 6 gateways** (Hartebeesthoek, Cape Town, Walvis Bay, Mauritius, Malindi, Lagos). Every customer site is within 26 minutes for 95% of messages. A Maputo gateway does not help: the Maputo corridor is limited by the wait for a satellite overhead, which the extra 45° satellites fix.
 
 > **Key takeaway:** a 24–48 satellite constellation gives the whole continent useful IoT and maritime data on average, which is why the Africa-wide pitch works early. Tight worst-case revisit needs ~48 (SA) to ~80 (Africa) satellites. Real-time continuous coverage needs ~80–150 (Iridium-class).
 
@@ -354,6 +367,14 @@ Gross figures. Revenue, grants and prepayments reduce the equity need to reach S
 **Monthly cash.** Even the base case goes about $0.5M negative for two months at the start of year 2. That's when hosted-payload and first-satellite payments come in before the seed money lands. **Close the seed round by the end of year 1**, or phase the payload deposits. The low case needs a larger seed round, or an earlier Series A.
 
 **Ownership.** The cap table (`model/assumptions.yaml` → `ownership`) keeps HDG ownership above 50% through Series B, as long as about a quarter to a third of each round comes from HDG-qualifying investors (DFIs, BEE funds) and half the ESOP goes to HDG employees. If the rounds come only from foreign VCs, the ratio falls fast. Plan an HDG anchor investor in every round, or a broad-based trust. *Founder HDG flags are placeholders. Confirm each holder's status and the current rule with counsel.*
+
+**Stress tests** (`model/assumptions.yaml` scenarios, 48 satellites, 4 leased gateways):
+
+| Scenario | Year-6 revenue | Year-6 EBITDA | Note |
+|---|---|---|---|
+| **Base** | $37.5M | $12.6M | Seed closed by month 12; no month below zero cash |
+| **IoT at ~$1/device** | $31.6M | $9.2M | Still inside the Stage 3 range |
+| **No SA government capacity contract** | $19.5M | $2.2M | Below the Stage 3 range: **the biggest commercial risk** |
 
 **IoT price pressure.** New entrants now price at about $1 per device per month (Myriota from $0.99; Sateliot targeting about €1). That's below our $2–5 assumption. At about $1, year-6 revenue falls from about $37.5M to about $31.6M, which is still in range. The reason: IoT is only about a quarter of Stage 3 revenue, and the **SA government sovereign-capacity contract is the line the plan really depends on**. Price IoT on sovereignty and local support, not on undercutting, and win the government anchor early.
 

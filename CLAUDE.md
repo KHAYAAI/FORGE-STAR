@@ -51,7 +51,9 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Satellites needed for frequent IoT (20–40 min): SA 16–24, SADC 24–36, Africa 30–48 **on average**. Simulation shows that a worst-case gap under ~1 h needs ~36–48 (SA) and ~80 (Africa) at a 10° mask. Continuous narrowband: 80–150 for Africa.
 - Financial model base case: Stage 3 (36 sats, yr 6) revenue ~$37M, equity ~$50M, gross need ~$38M. Monthly cash dips ~$0.5M negative at the start of year 2: close the seed round by the end of year 1. HDG share stays >50% only if each round has HDG-qualifying investors.
 - Schedule: with dependencies chained, Stage 2 lands ~61 months from start if run in sequence; ~43 months on the fast track (own demonstrator in parallel with the hosted payload, Series A on the hosted-payload result).
-- Delivery SLA (95% ≤ 60 min) across SADC needs ~36–48 sats + isoflux antenna (16° mask) + 4 gateways (SA ×2, Walvis Bay, Mauritius); equatorial sites stay ~2 h. Devices must re-send each pass until acked.
+- **Stage 3 design:** 42 sats @45° + 6 @10° (48) + 6 gateways (Hartebeesthoek, Cape Town, Walvis Bay, Mauritius, Malindi, Lagos) + isoflux antenna → 95% ≤ 26 min at all 7 customer sites (`sim/equatorial_study.py`). Re-send-until-acked is built (ACK frames, gateway dedupe); live run: 95% ≤ ~40 min on 24 sats, SA gateways.
+- Stress tests: no sovereign contract → year-6 revenue ~$19.5M (biggest commercial risk); IoT at $1 → ~$31.6M. Seed must close by month 12 → raise on signed LOIs (tracker option `seed_on_lois`, earliest ~month 11).
+- Launch readiness: `python3 scripts/launch_readiness.py` → `docs/LAUNCH_READINESS.md` (TRL in `readiness/trl.yaml`). First payload in orbit: ~Feb 2029 fast track; critical path runs through ICASA (counsel → pre-application → test licence → lab).
 - IoT pricing: entrants at ~$1/device/month; at that price year-6 revenue ~$31.6M (vs $37.5M). The sovereign contract is the real dependency.
 - Antenna: demo = patch + deeper NB-IoT repetition (mask ~26°); Stage 2 = shaped isoflux beam (mask 16–21°, needs ~25–40 W during passes).
 - Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.
@@ -81,9 +83,9 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 Done (Nov 2026): F´ deployment (native + aarch64 under QEMU), CCSDS dual basis, delivery-time sim, ThingsBoard live run, market checks, plus everything earlier.
 1. Autoroute the payload interface board (Freerouting needs approval to run here) and review by hand.
 2. Replace `PayloadSim` with real drivers: NB-IoT modem over UART, onboard pass predictor (port `forgestar/orbits.py` to C), X-band radio driver. Then run on a Raspberry Pi / STM32 dev board.
-3. Device firmware side of "re-send until acked": downlink ack frames in `forgestar/frames.py` + libforge.
+3. Device firmware for re-send-until-acked (ACK frames exist in `forgestar/frames.py`, libforge and F´ `ackIn`); wire ACK uplink into the F´ topology via the uplink radio driver.
 4. F´ ground: install fprime-gds on Python ≤3.12 and command the deployment over TCP.
-5. Low-inclination plane or equatorial gateway study for Nairobi/Lagos SLA.
+5. Sandf multi-shell support so the live stack runs the 42+6 design; ITU filing parameters from it.
 
 ThingsBoard: verified live (3.8.1): provisioning, telemetry forwarding and the operations dashboard work (`docs/img/thingsboard-operations.png`). Widget FQNs in 3.8: `cards.entities_table`, `maps_v2.openstreetmap`, `time_series_chart`.
 

@@ -22,6 +22,18 @@ The payload firmware encodes these; the SA gateway decodes them. Big-endian.
        u32  CRC-32 of everything before it
 
 Max frame size is 4096 bytes (fits one X-band transfer unit with room for FEC).
+
+ACK frame (ground -> satellite -> devices): tells satellites and devices which messages landed,
+so devices stop re-sending and satellites drop copies they still hold.
+  0  u8   magic 0xF6
+  1  u8   version (1)
+  2  u16  gateway id
+  4  u32  ack sequence number
+  8  u32  time issued, unix seconds
+  12 u16  entry count
+  14 u16  reserved (0)
+  Entries (repeated): u32 device short id, u32 t_created
+  Trailer: u32 CRC-32
 """
 from __future__ import annotations
 
@@ -104,3 +116,48 @@ def pack(sat_id: int, seq0: int, t_downlink: int, records: list[Record]) -> list
     if cur or not frames:
         frames.append(Frame(sat_id, seq, t_downlink, cur))
     return [f.encode() for f in frames]
+
+
+ACK_MAGIC = 0xF6
+_ACK = struct.Struct(">II")
+
+
+@dataclass
+class Ack:
+    gateway_id: int
+    seq: int
+    t_issued: int
+    keys: list[tuple[int, int]] = field(default_factory=list)  # (device short id, t_created)
+
+    def encode(self) -> bytes:
+        body = b"".join(_ACK.pack(sid, t) for sid, t in self.keys)
+        raw = _HDR.pack(ACK_MAGIC, VERSION, self.gateway_id, self.seq & 0xFFFFFFFF, self.t_issued, len(self.keys), 0) + body
+        raw += struct.pack(">I", zlib.crc32(raw) & 0xFFFFFFFF)
+        if len(raw) > MAX_FRAME:
+            raise FrameError("ack frame too large")
+        return raw
+
+
+ACK_MAX_ENTRIES = (MAX_FRAME - _HDR.size - 4) // _ACK.size  # 509
+
+
+def decode_ack(raw: bytes) -> Ack:
+    if len(raw) < _HDR.size + 4:
+        raise FrameError("too short")
+    (crc,) = struct.unpack(">I", raw[-4:])
+    if zlib.crc32(raw[:-4]) & 0xFFFFFFFF != crc:
+        raise FrameError("CRC mismatch")
+    magic, ver, gw, seq, t, n, _ = _HDR.unpack_from(raw, 0)
+    if magic != ACK_MAGIC or ver != VERSION or len(raw) != _HDR.size + n * _ACK.size + 4:
+        raise FrameError("not an ack frame")
+    keys = [_ACK.unpack_from(raw, _HDR.size + i * _ACK.size) for i in range(n)]
+    return Ack(gw, seq, t, [(int(a), int(b)) for a, b in keys])
+
+
+def pack_acks(gateway_id: int, seq0: int, t: int, keys: list[tuple[int, int]]) -> list[bytes]:
+    return [Ack(gateway_id, seq0 + i, t, keys[o:o + ACK_MAX_ENTRIES]).encode()
+            for i, o in enumerate(range(0, max(len(keys), 1), ACK_MAX_ENTRIES))]
+
+
+def frame_kind(raw: bytes) -> str:
+    return {MAGIC: "data", ACK_MAGIC: "ack"}.get(raw[0] if raw else -1, "unknown")

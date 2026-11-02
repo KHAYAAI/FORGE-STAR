@@ -67,8 +67,10 @@ def next_true(v: np.ndarray) -> np.ndarray:
 POLICY = os.environ.get("POLICY", "resend")  # resend: device re-sends each pass until acked; single: one copy
 
 
-def delivery_minutes(c: Constellation, gws: list[Site], t: np.ndarray) -> dict[str, np.ndarray]:
-    sat = propagate_ecef(c, t)
+def delivery_minutes(c, gws: list[Site], t: np.ndarray) -> dict[str, np.ndarray]:
+    """c: a Constellation, or a list of them (several orbital shells flown together)."""
+    shells = c if isinstance(c, (list, tuple)) else [c]
+    sat = np.concatenate([propagate_ecef(sh, t) for sh in shells], axis=1)
     el_c, _ = look(sat, CUSTOMERS)             # (T, P, N)
     el_g, _ = look(sat, gws)
     gw_vis = (el_g >= GW_MASK).any(1)          # (T, N)

@@ -10,10 +10,25 @@ scenarios:
   low:  {revenue: 0.6, capex: 1.25, opex: 1.1}
   base: {revenue: 1.0, capex: 1.0,  opex: 1.0}
   high: {revenue: 1.3, capex: 0.85, opex: 0.95}
+  # Named stress tests: base multipliers plus `overrides` (dotted paths into this file).
+  price_pressure:
+    revenue: 1.0
+    capex: 1.0
+    opex: 1.0
+    overrides:
+      revenue.iot.arpu_month: [1.2, 1.1, 1.0, 1.0, 1.0, 1.0]     # LEO IoT entrants at ~$1/device/month (2026)
+  no_sovereign:
+    revenue: 1.0
+    capex: 1.0
+    opex: 1.0
+    overrides:
+      revenue.sovereign.contract_value_year: [0, 0, 0, 0, 0, 0]  # SA government capacity contract does not land
+      revenue.sovereign.prepayment: [0, 0, 0, 0, 0, 0]
 
 constellation:
   # Satellites in service at year end (Stage 1 = 1–2, Stage 2 = 6–12, Stage 3 = 24–48)
-  sats_in_service:   [0, 1, 2, 10, 24, 36]
+  # Stage 3 target from sim/equatorial_study.py: 42 @45° + 6 @10° = 48 sats meets 95% ≤ 60 min at all customer sites
+  sats_in_service:   [0, 1, 2, 10, 30, 48]
   hosted_payloads:   [0, 1, 0, 0, 0, 0]        # year-2 hosted payload (Stage 1 lean demo)
   hosted_payload_cost: 350000                  # $200–500k range
   sat_unit_cost:     [0, 1800000, 1200000, 700000, 550000, 500000]  # bus+payload+AIT per sat; learning curve
@@ -32,6 +47,7 @@ team:
 
 other_opex:
   platform_cloud:    [30000, 60000, 120000, 250000, 400000, 550000]   # SA-hosted ThingsBoard/Kafka/TimescaleDB
+  gateway_leases:    [0, 0, 0, 120000, 240000, 240000]   # Walvis Bay, Mauritius, Malindi, Lagos passes (~$60k/yr each)
   spectrum_legal:    [150000, 250000, 350000, 400000, 400000, 400000] # ICASA, ITU, counsel
   sales_marketing_pct_revenue: 0.12
   g_and_a:           [80000, 150000, 300000, 600000, 900000, 1200000]
@@ -60,7 +76,7 @@ revenue:
 funding:
   founder_and_bootstrap: [250000, 0, 0, 0, 0, 0]
   grants:            [300000, 1000000, 1500000, 1500000, 1000000, 1000000]  # TIA, DSI, SANSA, NEF, IDC, DTIC
-  angel_seed:        [0, 2500000, 0, 0, 0, 0]
+  angel_seed:        [2500000, 0, 0, 0, 0, 0]   # closed by end of year 1 (monthly cash: base dips negative if it lands in year 2)
   series_a:          [0, 0, 22000000, 0, 0, 0]   # $15–30M at Stage 2
   series_b:          [0, 0, 0, 0, 25000000, 0]
   debt_or_dfi:       [0, 0, 0, 0, 0, 0]
@@ -70,7 +86,7 @@ funding:
 funding_month:
   founder_and_bootstrap: 1
   grants: 4
-  angel_seed: 3
+  angel_seed: 12
   series_a: 6
   series_b: 4
   debt_or_dfi: 6
@@ -87,7 +103,7 @@ ownership:
     - {name: "ESOP pool", shares: 1000000, hdg: false, pool: true}
   # HDG share of each new investor's stake: DFIs/BEE funds (e.g. IDC, NEF, PIC) count; most VCs do not.
   rounds:
-    - {name: "Angel/seed", year: 2, raise: 2500000, pre_money: 10000000, investor_hdg_share: 0.30, esop_topup_pct: 0}
+    - {name: "Angel/seed", year: 1, raise: 2500000, pre_money: 10000000, investor_hdg_share: 0.30, esop_topup_pct: 0}
     - {name: "Series A", year: 3, raise: 22000000, pre_money: 60000000, investor_hdg_share: 0.25, esop_topup_pct: 5}
     - {name: "Series B", year: 5, raise: 25000000, pre_money: 220000000, investor_hdg_share: 0.30, esop_topup_pct: 3}
   # ESOP: share of the pool granted to HDG employees (counts toward the rule once vested/held in an employee trust)

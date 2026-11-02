@@ -23,7 +23,7 @@ jobs:
       - name: Financial model
         run: python model/financial_model.py > /dev/null
       - name: Antenna trade, SGP4 check, readiness
-        run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python sim/latency_sim.py > /dev/null && python readiness/tracker.py > /dev/null
+        run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python sim/latency_sim.py > /dev/null && python sim/equatorial_study.py > /dev/null && python readiness/tracker.py > /dev/null && python scripts/launch_readiness.py > /dev/null
       - name: Verification register
         run: python scripts/verify_register.py > /dev/null
       - name: Strategy PDF

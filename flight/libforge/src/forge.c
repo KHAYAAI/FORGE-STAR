@@ -160,3 +160,36 @@ size_t forge_sf_next_link_block(forge_sf_t *sf, uint32_t t_dl, uint8_t *out, siz
     if (sent) *sent = (uint32_t)used;
     return llen;
 }
+
+/* ---------------- acks ---------------- */
+static uint32_t get32(const uint8_t *p) { return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | p[3]; }
+static uint16_t get16(const uint8_t *p) { return (uint16_t)(((unsigned)p[0] << 8) | p[1]); }
+
+int forge_ack_decode(const uint8_t *f, size_t len, forge_ack_key_t *keys, size_t max, uint16_t *gw) {
+    if (len < FORGE_FRAME_HDR + 4 || f[0] != FORGE_ACK_MAGIC || f[1] != FORGE_FRAME_VERSION) return -1;
+    if (forge_crc32(f, len - 4) != get32(f + len - 4)) return -1;
+    size_t n = get16(f + 12);
+    if (len != FORGE_FRAME_HDR + n * 8u + 4u) return -1;
+    if (gw) *gw = get16(f + 2);
+    size_t m = n < max ? n : max;
+    for (size_t i = 0; i < m; i++) {
+        keys[i].short_id = get32(f + FORGE_FRAME_HDR + i * 8u);
+        keys[i].t_created = get32(f + FORGE_FRAME_HDR + i * 8u + 4u);
+    }
+    return (int)m;
+}
+
+uint32_t forge_sf_apply_acks(forge_sf_t *sf, const forge_ack_key_t *keys, size_t n) {
+    uint32_t kept = 0, removed = 0;
+    for (uint32_t i = 0; i < sf->count; i++) {
+        forge_record_t *r = &sf->rec[(sf->head + i) % FORGE_SF_CAPACITY];
+        int acked = 0;
+        for (size_t k = 0; k < n && !acked; k++)
+            acked = keys[k].short_id == r->short_id && keys[k].t_created == r->t_created;
+        if (acked) { removed++; continue; }
+        if (kept != i) sf->rec[(sf->head + kept) % FORGE_SF_CAPACITY] = *r;
+        kept++;
+    }
+    sf->count = kept;
+    return removed;
+}

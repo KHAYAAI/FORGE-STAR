@@ -13,7 +13,8 @@ Africa's sovereign satellite data network. Strategy, models and Stage 0 platform
 | `ground/thingsboard/provision.py` | Creates ThingsBoard devices and the operations dashboard | `docker compose --profile full up -d` then `python3 ground/thingsboard/provision.py` |
 | `ground/gateway/` | Downlink handler: decodes satellite frames into device messages | runs in the stack |
 | `readiness/` | ICASA/ITU, funding, lab, orbit and customer milestones with dependencies | `python3 readiness/tracker.py` → `readiness/STATUS.md` |
-| `sim/latency_sim.py` | Delivery time: satellites vs gateways vs antenna | `python3 sim/latency_sim.py` |
+| `sim/latency_sim.py`, `sim/equatorial_study.py` | Delivery time: satellites vs gateways vs antenna; Stage 3 design | `python3 sim/equatorial_study.py` |
+| `docs/LAUNCH_READINESS.md` | Launch readiness report (TRL, schedule, blockers) | `python3 scripts/launch_readiness.py` |
 | `sim/antenna_trade.py`, `sim/sgp4_crosscheck.py` | Antenna options; orbit model validation | `python3 sim/antenna_trade.py` |
 | `flight/libforge/` | Flight core in C99 (store-and-forward, frames, error correction) | `cmake -S flight/libforge -B build/libforge && cmake --build build/libforge && ./build/libforge/test_libforge` |
 | `flight/fprime/` | NASA F´ flight software: `StoreForward` + `PayloadSim` components, `Payload` deployment (native and 64-bit ARM) | `git submodule update --init --recursive`; `cd flight/fprime && fprime-util generate && fprime-util build`; `python3 flight/run_payload.py` |

@@ -21,7 +21,25 @@ HERE = Path(__file__).parent
 OUT = HERE / "results"
 
 
+def apply_overrides(a: dict, sc: dict) -> dict:
+    """Return a copy of the assumptions with a scenario's dotted-path overrides applied."""
+    import copy
+    if not sc.get("overrides"):
+        return a
+    a = copy.deepcopy(a)
+    for path, value in sc["overrides"].items():
+        node = a
+        *parents, leaf = path.split(".")
+        for k in parents:
+            node = node[k]
+        if leaf not in node:
+            raise KeyError(f"scenario override points at unknown assumption: {path}")
+        node[leaf] = value
+    return a
+
+
 def build(a: dict, sc: dict) -> list[dict]:
+    a = apply_overrides(a, sc)
     yrs = a["years"]; c = a["constellation"]; g = a["ground"]; t = a["team"]
     o = a["other_opex"]; r = a["revenue"]; f = a["funding"]
     rows, cash, stations, prev_sats = [], 0.0, 0, 0
@@ -54,7 +72,7 @@ def build(a: dict, sc: dict) -> list[dict]:
         stations += g["stations_added"][i]
         team = t["headcount"][i] * t["loaded_cost"][i] * X
         ground_opex = stations * g["opex_per_station"] * X
-        platform = o["platform_cloud"][i] * X
+        platform = (o["platform_cloud"][i] + o.get("gateway_leases", [0] * len(yrs))[i]) * X
         spectrum = o["spectrum_legal"][i] * X
         sales = revenue * o["sales_marketing_pct_revenue"]
         ga = o["g_and_a"][i] * X

@@ -33,3 +33,23 @@ def test_buffer_full_drops():
     pending = deque(Pending({"device_id": str(i), "lat": 0.0, "lon": 0.0}, 0.0) for i in range(5))
     step(1.0, pending, buffers, sat_over(0, 0), np.array([False]), 20, 3, 100, stats)
     assert len(buffers[0].q) == 3 and stats["dropped_full"] == 2
+
+
+def test_resend_until_acked_full_loop():
+    from forgestar.logic import ResendNetwork, msg_key
+    stats = defaultdict(int); net = ResendNetwork(buffer_cap=100)
+    m = {"device_id": "pump-0001", "ts": 1000, "lat": -24.0, "lon": 29.0}
+    net.add(m, 0.0)
+    two = np.vstack([sat_over(-24.0, 29.0), sat_over(-24.0, 29.0)])          # both sats over the device
+    net.step(10.0, two, np.array([False, False]), 20, 100, stats)
+    assert stats["uplinked"] == 2 and len(net.pending) == 1                   # copy on each satellite
+    # sat 0 reaches a gateway: delivers once
+    out = net.step(500.0, np.vstack([sat_over(-25.9, 27.7), sat_over(10, 10)]), np.array([True, False]), 20, 100, stats)
+    assert len(out) == 1 and out[0][2] == 0
+    # gateway acks it; sat 1 later passes a gateway: learns the ack and drops its duplicate instead of downlinking
+    net.queue_ground_acks([msg_key(m)])
+    out = net.step(900.0, np.vstack([sat_over(10, 10), sat_over(-25.9, 27.7)]), np.array([False, True]), 20, 100, stats)
+    assert out == [] and stats["dropped_acked_onboard"] == 1
+    # sat 1 flies over the device again: device hears the ack and stops re-sending
+    net.step(1500.0, np.vstack([sat_over(10, 10), sat_over(-24.0, 29.0)]), np.array([False, False]), 20, 100, stats)
+    assert not net.pending and stats["acked_on_device"] == 1

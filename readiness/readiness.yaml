@@ -45,7 +45,7 @@ items:
   # --- Funding ---
   - {id: F1, ws: funding, title: "TIA/DSI grant application: NB-IoT NTN lab", start: 1, months: 4, owner: TBD, status: todo, reverify: true}
   - {id: F2, ws: funding, title: "Seed round closed (≈$2.5M, HDG anchor) — before year 2 starts", start: 6, months: 5, depends: [O3, C4], owner: TBD, status: todo,
-     note: "Monthly cash model: base case dips negative at the start of year 2 if the seed lands later."}
+     note: "Model needs the seed by month 12, but waiting for paying customers + an HDG anchor puts the earliest close at ~month 14. Raise on signed LOIs (C1) with the anchor in parallel, or bridge months 12–14 with grants."}
   - {id: F3, ws: funding, title: "Series A ($15–30M) on early-service traction", start: 24, months: 6, depends: [R4], owner: TBD, status: todo}
   - {id: F4, ws: funding, title: "Government capacity contract with prepayment", start: 24, months: 18, depends: [S6, R4], owner: TBD, status: todo}
 
@@ -70,13 +70,16 @@ scenarios:
   parallel_seed:
     _label: "Seed raise runs alongside the HDG-anchor search"
     F2: {depends: [O2, C4]}
+  seed_on_lois:
+    _label: "Seed raised on signed LOIs (not paying customers), anchor in parallel"
+    F2: {depends: [O2, C1], start: 6}
   parallel_demo:
     _label: "+ own demonstrator built in parallel with the hosted payload"
     F2: {depends: [O2, C4]}
     R4: {depends: [R2, S6], start: 12}
   fast_track:
-    _label: "+ Series A on the hosted-payload result, tighter builds"
-    F2: {depends: [O2, C4]}
+    _label: "Seed on LOIs + demonstrator in parallel + Series A on the hosted-payload result, tighter builds"
+    F2: {depends: [O2, C1], start: 6}
     R4: {depends: [R2, S6], start: 12}
     F3: {depends: [R3]}
     R3: {months: 10}

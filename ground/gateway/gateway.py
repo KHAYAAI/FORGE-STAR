@@ -24,7 +24,8 @@ from collections import OrderedDict
 from pathlib import Path
 
 from forgestar.fec import decode_stream
-from forgestar.frames import FrameError, decode, short_id
+from forgestar.frames import FrameError, decode, frame_kind, pack_acks, short_id
+from forgestar.fec import encode_block
 
 SEEN_MAX = 100000
 
@@ -35,13 +36,16 @@ class Gateway:
         self.registry = registry        # callable(short_id) -> dict | None
         self.grace_s = grace_s          # hold records of unregistered devices this long before giving up
         self.unresolved: list[tuple[float, int, dict]] = []
+        self.delivered: OrderedDict = OrderedDict()   # (short id, t_created) -> time landed: dedupe + acks
+        self.ack_seq = 0
         self.seen: OrderedDict = OrderedDict()
         self.stats = {"frames": 0, "records": 0, "duplicates": 0, "bad": 0, "unknown_device": 0,
-                      "link_blocks": 0, "fec_corrected_bytes": 0, "fec_failed": 0}
+                      "link_blocks": 0, "fec_corrected_bytes": 0, "fec_failed": 0, "duplicate_records": 0, "acks_sent": 0}
 
     def handle_link(self, stream: bytes, source: str, received_ts: float | None = None) -> int:
         """Raw received bytes (one or more link blocks, with noise) -> FEC decode -> frames."""
         frames, st = decode_stream(stream)
+        frames = [f for f in frames if frame_kind(f) == "data"]
         self.stats["link_blocks"] += st["blocks"]; self.stats["fec_corrected_bytes"] += st["corrected_bytes"]
         self.stats["fec_failed"] += st["failed"]
         return sum(self.handle(f, source, received_ts) or 0 for f in frames)
@@ -63,8 +67,15 @@ class Gateway:
         now = received_ts if received_ts is not None else time.time()
         n = 0
         for r in f.records:
-            msg = {"ts": r.t_created, "received_ts": now, "path": "satellite", "sat": f.sat_id,
-                   "lat": r.lat, "lon": r.lon, "data": r.payload, "frame_seq": f.seq, "source": source}
+            key = (r.device_short_id, r.t_created)
+            if key in self.delivered:                 # another satellite carried the same message
+                self.stats["duplicate_records"] += 1; continue
+            self.delivered[key] = now
+            if len(self.delivered) > SEEN_MAX: self.delivered.popitem(last=False)
+            payload = dict(r.payload)
+            sim_lat = payload.pop("_sim_latency_s", None)   # simulated space segment only (sandf)
+            msg = {"ts": (now - sim_lat) if sim_lat is not None else r.t_created, "received_ts": now, "path": "satellite", "sat": f.sat_id,
+                   "lat": r.lat, "lon": r.lon, "data": payload, "frame_seq": f.seq, "source": source}
             dev = self.registry(r.device_short_id)
             if dev:
                 self.publish({**dev, **msg})
@@ -76,6 +87,17 @@ class Gateway:
         self.stats["records"] += n
         return n
 
+
+    def ack_blocks(self, gateway_id: int, window_s: float, now: float | None = None) -> list[bytes]:
+        """FEC link blocks carrying acks for everything landed in the last window_s seconds.
+        Re-broadcast every interval so satellites passing later still learn them."""
+        now = time.time() if now is None else now
+        keys = [k for k, t in self.delivered.items() if now - t <= window_s]
+        if not keys:
+            return []
+        frames = pack_acks(gateway_id, self.ack_seq, int(now), keys)
+        self.ack_seq += len(frames); self.stats["acks_sent"] += len(keys)
+        return [encode_block(f) for f in frames]
 
     def _publish_unknown(self, sid: int, msg: dict):
         self.stats["unknown_device"] += 1
@@ -151,7 +173,9 @@ def main():
     gw = Gateway(lambda m: prod.send("iot.uplink", m), registry, grace_s=float(os.environ.get("UNKNOWN_GRACE_S", 60)))
     frame_dir = Path(os.environ["FRAME_DIR"]) if os.environ.get("FRAME_DIR") else None
     station, norad = os.environ.get("SATNOGS_STATION_ID"), os.environ.get("NORAD_ID")
-    since, last_poll, last_report = {}, 0.0, time.time()
+    since, last_poll, last_report, last_ack = {}, 0.0, time.time(), 0.0
+    gw_id = int(os.environ.get("GATEWAY_ID", 1))
+    ack_every, ack_window = float(os.environ.get("ACK_INTERVAL_S", 5)), float(os.environ.get("ACK_WINDOW_S", 3 * 3600))
     print("gateway: listening on ground.frames" + (f", {frame_dir}" if frame_dir else "")
           + (f", SatNOGS station {station}" if station and norad else ""), flush=True)
     while True:
@@ -167,6 +191,10 @@ def main():
             except Exception as e: print(f"gateway: SatNOGS poll failed: {e}", flush=True)
             last_poll = time.time()
         gw.retry_unresolved()
+        if time.time() - last_ack > ack_every:    # acks go up on the next pass of every satellite
+            for blk in gw.ack_blocks(gw_id, ack_window):
+                prod.send("ground.uplink", {"link": base64.b64encode(blk).decode(), "gateway": gw_id})
+            last_ack = time.time()
         prod.flush()
         if time.time() - last_report > 30:
             print(f"gateway: {gw.stats}", flush=True); last_report = time.time()

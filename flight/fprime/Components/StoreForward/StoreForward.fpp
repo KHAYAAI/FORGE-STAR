@@ -29,6 +29,12 @@ module ForgeSat {
     @ Pass state from the onboard pass predictor (same effect as SF_PASS_START / SF_PASS_END)
     async input port passIn: PassState
 
+    @ ACK frames uplinked by a gateway (after FEC decode): messages that already landed
+    async input port ackIn: Fw.BufferSend
+
+    @ Returns ackIn buffers to their owner once processed
+    output port ackReturn: Fw.BufferSend
+
     @ Start a downlink pass (gateway in view)
     async command SF_PASS_START opcode 0x00
 
@@ -47,6 +53,9 @@ module ForgeSat {
     @ Link blocks sent since boot
     telemetry BlocksSent: U32
 
+    @ Stored messages dropped because the ground had already acked them (duplicates avoided)
+    telemetry AckedOnBoard: U32
+
     @ A downlink pass started
     event PassStarted(stored: U32) severity activity high format "Downlink pass started, {} messages on board"
 
@@ -55,6 +64,12 @@ module ForgeSat {
 
     @ Store-and-forward buffer full
     event BufferFull severity warning high format "Store-and-forward buffer full, message dropped" throttle 5
+
+    @ An ACK frame was applied
+    event AcksApplied(keys: U32, removed: U32) severity activity low format "ACK frame: {} keys, {} stored duplicates dropped"
+
+    @ An uplinked ACK frame failed its checks
+    event BadAck severity warning low format "Uplinked ACK frame rejected (CRC or format)"
 
     @ Buffer cleared by command
     event Cleared(discarded: U32) severity activity high format "Store-and-forward buffer cleared, {} messages discarded"

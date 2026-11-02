@@ -24,7 +24,8 @@ class StoreForwardTester : public StoreForwardGTestBase {
     void testNoDownlinkOutsidePass();  //!< ticks outside a pass send nothing
     void testBufferFullDropsAndWarns();
     void testClearKeepsSequenceMoving();
-    void testPassPredictorInput();   //!< passIn port starts and ends passes like the commands
+    void testPassPredictorInput();
+    void testAcksDropStoredDuplicates();   //!< passIn port starts and ends passes like the commands
 
   private:
     void from_linkOut_handler(FwIndexType portNum, Fw::Buffer& fwBuffer) override;

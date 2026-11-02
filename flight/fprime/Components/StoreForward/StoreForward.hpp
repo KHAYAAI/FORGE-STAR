@@ -23,6 +23,7 @@ class StoreForward : public StoreForwardComponentBase {
                           const Fw::StringBase& payload) override;
     void schedIn_handler(FwIndexType portNum, U32 context) override;
     void passIn_handler(FwIndexType portNum, bool inView) override;
+    void ackIn_handler(FwIndexType portNum, Fw::Buffer& fwBuffer) override;
     void startPass();
     void endPass();
     void SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;
@@ -37,6 +38,8 @@ class StoreForward : public StoreForwardComponentBase {
     U32 m_blocksSent;                         //!< since boot
     U32 m_passBlocks;
     U32 m_passRecords;
+    U32 m_ackedOnBoard;                       //!< since boot
+    forge_ack_key_t m_ackKeys[512];
 };
 
 }  // namespace ForgeSat

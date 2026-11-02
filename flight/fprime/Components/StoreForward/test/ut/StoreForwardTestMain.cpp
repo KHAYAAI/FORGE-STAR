@@ -11,6 +11,8 @@ TEST(OffNominal, ClearKeepsSequenceMoving) { ForgeSat::StoreForwardTester t; t.t
 
 TEST(Nominal, PassPredictorInput) { ForgeSat::StoreForwardTester t; t.testPassPredictorInput(); }
 
+TEST(Nominal, AcksDropStoredDuplicates) { ForgeSat::StoreForwardTester t; t.testAcksDropStoredDuplicates(); }
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

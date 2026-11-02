@@ -142,4 +142,35 @@ void StoreForwardTester::testPassPredictorInput() {
     ASSERT_EQ(1u, this->m_blocks.size());   // pass over: nothing more sent
 }
 
+void StoreForwardTester::testAcksDropStoredDuplicates() {
+    for (U32 i = 0; i < 5; i++) this->sendDevice(i);       // short ids 0x1234+i, t 1790000000+i
+    // build an ACK frame for messages 1 and 3, exactly as the gateway does (forgestar/frames.py)
+    static U8 f[16 + 2 * 8 + 4];
+    std::memset(f, 0, sizeof f);
+    f[0] = 0xF6; f[1] = 1; f[3] = 4;                       // magic, version, gateway 4
+    f[13] = 2;                                             // two entries
+    const U32 ids[2] = {0x1234u + 1, 0x1234u + 3}, ts[2] = {1790000001u, 1790000003u};
+    for (int k = 0; k < 2; k++) {
+        for (int b = 0; b < 4; b++) {
+            f[16 + k * 8 + b] = static_cast<U8>(ids[k] >> (24 - 8 * b));
+            f[20 + k * 8 + b] = static_cast<U8>(ts[k] >> (24 - 8 * b));
+        }
+    }
+    const U32 crc = forge_crc32(f, sizeof f - 4);
+    for (int b = 0; b < 4; b++) f[sizeof f - 4 + b] = static_cast<U8>(crc >> (24 - 8 * b));
+    this->clearHistory();
+    Fw::Buffer buf(f, sizeof f);
+    this->invoke_to_ackIn(0, buf);
+    this->component.doDispatch();
+    ASSERT_EVENTS_AcksApplied(0, 2, 2);
+    ASSERT_from_ackReturn_SIZE(1);                          // buffer handed back to its owner
+    ASSERT_TLM_Stored(0, 3);
+    ASSERT_TLM_AckedOnBoard(0, 2);
+    f[20] ^= 1;                                             // corrupt -> rejected, buffer still returned
+    this->invoke_to_ackIn(0, buf);
+    this->component.doDispatch();
+    ASSERT_EVENTS_BadAck_SIZE(1);
+    ASSERT_from_ackReturn_SIZE(2);
+}
+
 }  // namespace ForgeSat

@@ -9,7 +9,7 @@
 namespace ForgeSat {
 
 StoreForward::StoreForward(const char* const compName)
-    : StoreForwardComponentBase(compName), m_passActive(false), m_blocksSent(0), m_passBlocks(0), m_passRecords(0) {
+    : StoreForwardComponentBase(compName), m_passActive(false), m_blocksSent(0), m_passBlocks(0), m_passRecords(0), m_ackedOnBoard(0) {
     forge_sf_init(&this->m_store, 0);
 }
 
@@ -83,6 +83,23 @@ void StoreForward::passIn_handler(FwIndexType portNum, bool inView) {
     }
 }
 
+void StoreForward::ackIn_handler(FwIndexType portNum, Fw::Buffer& fwBuffer) {
+    U16 gw = 0;
+    const int n = forge_ack_decode(fwBuffer.getData(), fwBuffer.getSize(), this->m_ackKeys,
+                                   FW_NUM_ARRAY_ELEMENTS(this->m_ackKeys), &gw);
+    if (n < 0) {
+        this->log_WARNING_LO_BadAck();
+    } else {
+        const U32 removed = forge_sf_apply_acks(&this->m_store, this->m_ackKeys, static_cast<size_t>(n));
+        this->m_ackedOnBoard += removed;
+        this->log_ACTIVITY_LO_AcksApplied(static_cast<U32>(n), removed);
+        this->writeTelemetry();
+    }
+    if (this->isConnected_ackReturn_OutputPort(0)) {
+        this->ackReturn_out(0, fwBuffer);
+    }
+}
+
 void StoreForward::SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
     this->startPass();
     this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
@@ -108,6 +125,7 @@ void StoreForward::writeTelemetry() {
     this->tlmWrite_Stored(this->m_store.count);
     this->tlmWrite_Dropped(this->m_store.dropped);
     this->tlmWrite_BlocksSent(this->m_blocksSent);
+    this->tlmWrite_AckedOnBoard(this->m_ackedOnBoard);
 }
 
 }  // namespace ForgeSat

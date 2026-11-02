@@ -43,6 +43,12 @@ uint32_t forge_short_id(const char *device_name);
 size_t forge_frame_encode(uint8_t *out, size_t out_cap, uint16_t sat_id, uint32_t seq, uint32_t t_downlink,
                           const forge_record_t *records, size_t count, int more_follow, size_t *used);
 
+/* ---- acks (ground -> satellite): messages that already landed ---- */
+#define FORGE_ACK_MAGIC 0xF6u
+typedef struct { uint32_t short_id, t_created; } forge_ack_key_t;
+/* Decode an ACK frame (after FEC). Returns number of keys written to keys[0..max), or -1 if invalid. */
+int forge_ack_decode(const uint8_t *frame, size_t len, forge_ack_key_t *keys, size_t max, uint16_t *gateway_id);
+
 /* ---- link layer ---- */
 /* RS(255,223), CCSDS parameters and CCSDS dual-basis symbols (interoperable with libfec encode_rs_ccsds). */
 void   forge_rs_encode(const uint8_t data[FORGE_RS_K], uint8_t parity[FORGE_RS_N - FORGE_RS_K]);
@@ -68,6 +74,10 @@ int    forge_sf_store(forge_sf_t *sf, const forge_record_t *r);
  * Returns link-block bytes written (0 when empty); records sent are removed. */
 size_t forge_sf_next_link_block(forge_sf_t *sf, uint32_t t_downlink, uint8_t *out, size_t out_cap,
                                 uint32_t *records_sent);
+
+/* Remove stored records that the ground has acked (they would only be duplicates).
+ * Returns how many were removed. Order of the remaining records is kept. */
+uint32_t forge_sf_apply_acks(forge_sf_t *sf, const forge_ack_key_t *keys, size_t n);
 
 #ifdef __cplusplus
 }

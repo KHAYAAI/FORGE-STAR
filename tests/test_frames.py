@@ -81,3 +81,24 @@ def test_gateway_holds_unregistered_devices_until_registered():
     g.handle(Frame(1, 2, 0, [rec(2)]).encode(), "test")
     g.retry_unresolved(now=time.time() + 61)          # never registered -> published as unknown after grace
     assert out[-1]["device_id"].startswith("unknown-")
+
+
+def test_gateway_drops_duplicate_copies_and_acks_them():
+    from forgestar.fec import decode_stream
+    from forgestar.frames import decode_ack
+    out = []; g = gwmod.Gateway(out.append, lambda s: {"device_id": "pump-0001", "kind": "pump", "customer": "Mine"})
+    r = rec(1)
+    g.handle(Frame(1, 1, 0, [r]).encode(), "sat1")
+    g.handle(Frame(2, 1, 0, [r]).encode(), "sat2")          # same message carried by a second satellite
+    assert len(out) == 1 and g.stats["duplicate_records"] == 1
+    blocks = g.ack_blocks(gateway_id=4, window_s=3600)
+    frames, _ = decode_stream(b"".join(blocks))
+    ack = decode_ack(frames[0])
+    assert ack.gateway_id == 4 and ack.keys == [(r.device_short_id, r.t_created)]
+
+
+def test_gateway_uses_simulated_latency_field():
+    out = []; g = gwmod.Gateway(out.append, lambda s: {"device_id": "x", "kind": "k", "customer": "c"})
+    r = Record(short_id("x"), 1_790_000_000, 0.0, 0.0, {"v": 1, "_sim_latency_s": 1800})
+    g.handle(Frame(1, 9, 0, [r]).encode(), "sim", received_ts=1_790_000_100)
+    assert out[0]["received_ts"] - out[0]["ts"] == 1800 and "_sim_latency_s" not in out[0]["data"]

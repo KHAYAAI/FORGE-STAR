@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from forgestar.fec import encode_block  # noqa: E402
-from forgestar.frames import Frame, Record, short_id  # noqa: E402
+from forgestar.frames import Ack, Frame, Record, short_id  # noqa: E402
 
 recs = [
     Record(short_id("pump-0000"), 1790000000, -24.12345, 29.54321, {"flow_lpm": 120.5, "running": True}),
@@ -36,5 +36,7 @@ for r in recs:
     out.append(f'  {{{r.device_short_id}u, {r.t_created}u, {round(r.lat*1e5)}, {round(r.lon*1e5)}, "{pj}"}},')
 out.append("};")
 out.append(carr("VEC_FRAME", frame) + carr("VEC_LINK", link))
+ack = Ack(4, 9, 1790001000, [(recs[0].device_short_id, recs[0].t_created), (recs[2].device_short_id, recs[2].t_created)]).encode()
+out.append(carr("VEC_ACK", ack))
 (Path(__file__).parent / "vectors.h").write_text("\n".join(out))
 print(f"frame {len(frame)} bytes, link block {len(link)} bytes")

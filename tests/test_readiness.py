@@ -22,3 +22,17 @@ def test_real_plan_is_valid_and_fast_track_is_faster():
     base = t.schedule(cfg["items"])["V1"]["end"]
     fast = t.schedule(t.apply(cfg["items"], cfg["scenarios"]["fast_track"]))["V1"]["end"]
     assert fast < base
+
+
+def test_launch_readiness_report_builds():
+    import subprocess
+    r = subprocess.run([sys.executable, str(ROOT / "scripts" / "launch_readiness.py")], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    text = (ROOT / "docs" / "LAUNCH_READINESS.md").read_text()
+    assert "Critical path to first payload" in text and "TRL" in text
+
+
+def test_seed_on_lois_closes_by_month_12():
+    cfg = yaml.safe_load((ROOT / "readiness" / "readiness.yaml").read_text())
+    s = t.schedule(t.apply(cfg["items"], cfg["scenarios"]["seed_on_lois"]))
+    assert s["F2"]["end"] <= 12
