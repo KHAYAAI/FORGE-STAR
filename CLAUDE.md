@@ -12,6 +12,9 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `sim/coverage_sim.py`: coverage, revisit and gateway passes → `sim/results/` (plus `link_budget.md`). The mask comes from the link budget; `MIN_ELEV_DEG` overrides it.
 - `model/financial_model.py` + `model/assumptions.yaml`: Stages 0–3 model → `model/results/` (CSV, xlsx with monthly cash and ownership sheets, summary with consistency checks including the 30% HDG rule).
 - `ground/docker-compose.yml`: Stage 0 platform (TimescaleDB, Kafka, ingest, `sandf` simulated satellites, device simulator; `--profile full` adds ThingsBoard; `--profile radio` adds SatNOGS). `ground/thingsboard/provision.py` creates the devices and dashboard.
+- `forgestar/frames.py`: the store-and-forward downlink frame format (v1) shared by payload firmware and gateway. `ground/gateway/` decodes frames (Kafka `ground.frames`, a frames folder, or SatNOGS Network) into `iot.uplink`.
+- `sim/antenna_trade.py`: payload antenna options vs usable elevation and service. `sim/sgp4_crosscheck.py`: validates `forgestar/orbits.py` against SGP4.
+- `readiness/readiness.yaml` + `readiness/tracker.py`: the outside work (ICASA/ITU, ownership, funding, lab, orbit, customers) with dependencies → `readiness/STATUS.md` (critical path, late items, Gantt, plan options). Update statuses there.
 - `tests/`: pytest suite. `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
 - `docs/ntn-testbed-plan.md`: NB-IoT NTN lab plan.
 - `research/`: original inputs (the Exosat analysis, the open-source stack map, the first FORGE STAR plan, the v1 strategy summary). Read-only reference.
@@ -40,6 +43,8 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Bootstrapping covers about 10% of the work and about 1% of the capital to full launch, but ~80–100% of a hosted-payload first launch.
 - Satellites needed for frequent IoT (20–40 min): SA 16–24, SADC 24–36, Africa 30–48 **on average**. Simulation shows that a worst-case gap under ~1 h needs ~36–48 (SA) and ~80 (Africa) at a 10° mask. Continuous narrowband: 80–150 for Africa.
 - Financial model base case: Stage 3 (36 sats, yr 6) revenue ~$37M, equity ~$50M, gross need ~$38M. Monthly cash dips ~$0.5M negative at the start of year 2: close the seed round by the end of year 1. HDG share stays >50% only if each round has HDG-qualifying investors.
+- Schedule: with dependencies chained, Stage 2 lands ~61 months from start if run in sequence; ~43 months on the fast track (own demonstrator in parallel with the hosted payload, Series A on the hosted-payload result).
+- Antenna: demo = patch + deeper NB-IoT repetition (mask ~26°); Stage 2 = shaped isoflux beam (mask 16–21°, needs ~25–40 W during passes).
 - Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.
 
 ## Open-source stack
@@ -64,12 +69,12 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 - **Autonomy/robotics:** telemetry
 
 ## Good next engineering tasks for Claude Code
-Done (Nov 2026): coverage sim with J2 and link budget, store-and-forward service, ThingsBoard provisioning + dashboard, ownership and monthly cash in the model, CI, PDF rendered from markdown.
-1. Run ThingsBoard for real (`--profile full`) and check the dashboard renders. Docker Hub rate-limited the image in the build session, so it was only tested against a fake API.
-2. Payload antenna trade study: isoflux vs patch vs small phased array, to close the NB-IoT downlink at 20–25°.
-3. Orekit cross-check of `forgestar/orbits.py` (drag, full gravity) and an OpenSN network emulation.
-4. Gateway downlink handler for real passes: SatNOGS observation → decoder → Kafka `iot.uplink` (replaces `sandf` in production).
-5. Regulatory tracker (ICASA/ITU filing milestones, spectrum counsel actions) and a grant pipeline tracker.
+Done (Nov 2026): J2 orbits + SGP4 cross-check, link budget, antenna trade study, store-and-forward service, binary downlink frames + gateway handler, ThingsBoard provisioning (tested against a fake API), ownership + monthly cash, readiness tracker, CI.
+1. Run ThingsBoard for real (`--profile full`) and confirm the dashboard renders (Docker Hub rate-limited the image in build sessions).
+2. Payload firmware skeleton in F´ that produces `forgestar/frames.py` v1 frames, with a shared test vector.
+3. Orekit cross-check once orekit-data can be downloaded (needs gitlab.orekit.org access).
+4. Gateway: add FEC/CCSDS framing below v1 frames, and a SatNOGS decoder flowgraph for the demo satellite's modulation.
+5. Customer API (REST) on top of TimescaleDB for device data and SLA reports.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

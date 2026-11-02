@@ -207,7 +207,22 @@ What changes:
 | **AIS receive** (VHF monopole) | horizon | AIS is limited by message collisions, not link budget |
 | **Feeder downlink** (X-band → 3.7 m SA dish) | ~4° | Gateway passes are long and the link closes easily |
 
-*Simplified model: circular orbits with J2, no drag or full gravity field. Firm up with Orekit, then OpenSN, before external use.*
+#### Antenna trade study
+
+`sim/antenna_trade.py` compares payload antennas. The usable mask is the higher of uplink and downlink. Service is shown for 24 satellites at 45°, at the worst SA site.
+
+| Option | Usable mask | SA typical / longest wait | DC power | Est. cost |
+|---|---|---|---|---|
+| **Patch 14 dBi, 2 W (baseline)** | 37° | 32 min / 4.2 h | 12 W | ~$15k |
+| **Baseline + deeper coverage enhancement** | 26° | 21 min / 3.5 h | 12 W | ~$15k |
+| **Patch, 10 W amplifier** | 24° | 20 min / 3.3 h | 45 W | ~$40k |
+| **Shaped (isoflux) beam, 7 dBi, 5 W** | 21° | 16 min / 2.5 h | 25 W | ~$45k |
+| **Shaped (isoflux) beam, 5 dBi, 8 W** | 16° | 11 min / 1.6 h | 38 W | ~$55k |
+| **4×4 phased array, 4 W** | 20° | 16 min / 2.2 h | 30 W | ~$150k |
+
+**Recommendation:** fly the demonstrator with the simple patch plus deeper NB-IoT repetition, which is a software change. Design the Stage 2 payload around a shaped isoflux antenna, provided the bus can supply about 25–40 W during passes. That's a question for the bus partner. Keep the phased array for Stage 4.
+
+*Simplified model: circular orbits with J2. Checked against SGP4 (`sim/sgp4_crosscheck.py`): orbit planes agree to within 3 km over 3 days, and the remaining difference is a timing offset equal to 1–3 km of altitude. Firm up with Orekit, then OpenSN, before external use. All antenna figures are illustrative.*
 
 > **Key takeaway:** a 24–48 satellite constellation gives the whole continent useful IoT and maritime data on average, which is why the Africa-wide pitch works early. Tight worst-case revisit needs ~48 (SA) to ~80 (Africa) satellites. Real-time continuous coverage needs ~80–150 (Iridium-class).
 
@@ -224,6 +239,21 @@ What changes:
 | **3: Operational network** | 24–48 | Years 3.5–5 | IoT in ~30 min across Africa; ITU filing secured; sovereign contract; MNO wholesale | $30–60M + prepayments |
 | **4: Continuous narrowband** | 80–150 | Years 5–7 | Real-time messaging/IoT; emergency messaging to NTN phones; other states | $100–250M, co-financed |
 | **5: Broadband layer** | Hundreds+ | Years 7+ | Own capacity for national rural connectivity programme | $0.5–2B+, gov./DFI |
+
+#### Schedule check (November 2026)
+
+`readiness/tracker.py` chains the 30 outside tasks in `readiness/readiness.yaml` by their dependencies. These are spectrum, ownership, funding, lab, orbit and customers.
+
+| Plan | Stage 2 (6–12 sats) ready | From start |
+|---|---|---|
+| **Everything in sequence** | Jan 2032 | ~61 months |
+| **Seed raised alongside the HDG-anchor search** | Dec 2031 | ~60 months |
+| **+ own demonstrator built alongside the hosted payload** | Dec 2030 | ~48 months |
+| **+ Series A on the hosted-payload result, tighter builds** | Jul 2030 | ~43 months |
+
+The stage table's "years 2.5–3.5" for early service is **only reachable on the fast track**, and even then it lands at the late end, about 3.6 years. The biggest lever is to **build our own 6U–12U demonstrator in parallel with the hosted payload, not after it**. That saves about a year. It needs a seed round large enough to fund both. The second lever is to **raise the Series A on the hosted-payload result**. Both should become plan decisions.
+
+*Durations are planning estimates. Update `readiness/readiness.yaml` as quotes and ICASA timelines firm up.*
 
 #### Build-strategy coverage by stage
 

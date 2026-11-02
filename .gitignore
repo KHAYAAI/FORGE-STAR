@@ -3,3 +3,6 @@ __pycache__/
 ground/.env
 .pytest_cache/
 ground/thingsboard/tokens.json
+ground/frames/*.bin
+ground/frames/done/
+ground/frames/bad/

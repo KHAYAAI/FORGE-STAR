@@ -25,12 +25,17 @@ def tb_token(device_id):
     except OSError:
         return None
     return tokens.get(device_id)
-consumer = KafkaConsumer("iot.uplink", bootstrap_servers=os.environ["KAFKA_BOOTSTRAP"],
-                         group_id="ingest", value_deserializer=lambda b: json.loads(b))
-print("ingest: listening on iot.uplink", flush=True)
+consumer = KafkaConsumer("iot.uplink", "iot.register", bootstrap_servers=os.environ["KAFKA_BOOTSTRAP"],
+                         group_id="ingest", auto_offset_reset="earliest", value_deserializer=lambda b: json.loads(b))
+print("ingest: listening on iot.uplink, iot.register", flush=True)
 n = 0
 for msg in consumer:
     m = msg.value
+    if msg.topic == "iot.register":
+        db.execute("INSERT INTO devices (device_id, kind, customer) VALUES (%s,%s,%s) "
+                   "ON CONFLICT (device_id) DO UPDATE SET kind = EXCLUDED.kind, customer = EXCLUDED.customer",
+                   (m["device_id"], m["kind"], m["customer"]))
+        continue
     db.execute("INSERT INTO devices (device_id, kind, customer) VALUES (%s,%s,%s) ON CONFLICT DO NOTHING",
                (m["device_id"], m["kind"], m["customer"]))
     db.execute("INSERT INTO uplinks (time, device_id, path, sat, lat, lon, payload, received_at) "

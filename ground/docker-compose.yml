@@ -3,7 +3,7 @@
 #   docker compose --profile full up -d  # + ThingsBoard (device management, dashboards; ~2 GB RAM)
 #   docker compose --profile radio up -d # + SatNOGS client (needs an SDR on USB)
 # Data path: devices -> Kafka iot.device_tx -> sandf (simulated satellites, store-and-forward)
-#            -> Kafka iot.uplink -> ingest -> TimescaleDB (+ ThingsBoard). Resale/terrestrial traffic goes straight to iot.uplink.
+#            -> binary frames on ground.frames -> gateway (decode, dedupe) -> Kafka iot.uplink -> ingest -> TimescaleDB (+ ThingsBoard). Resale/terrestrial traffic goes straight to iot.uplink.
 name: forge-star
 
 services:
@@ -77,7 +77,27 @@ services:
       PLANES: ${PLANES:-4}
       INC: ${INC:-45}
       SPEEDUP: ${SPEEDUP:-60}
+      EMIT: frames   # binary downlink frames -> ground.frames -> gateway (set json to bypass the gateway)
     depends_on:
+      kafka: {condition: service_healthy}
+    restart: unless-stopped
+
+  gateway:
+    # Downlink handler: frames (Kafka ground.frames, FRAME_DIR, or SatNOGS Network) -> iot.uplink
+    build:
+      context: ..
+      dockerfile: ground/gateway/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      PG_DSN: postgresql://forge:${PG_PASSWORD:-forge-dev-only}@timescaledb:5432/forgestar
+      FRAME_DIR: /frames
+      SATNOGS_STATION_ID: ${SATNOGS_STATION_ID:-}
+      SATNOGS_API_TOKEN: ${SATNOGS_API_TOKEN:-}
+      NORAD_ID: ${FORGE_NORAD_ID:-}
+    volumes:
+      - ./frames:/frames
+    depends_on:
+      timescaledb: {condition: service_healthy}
       kafka: {condition: service_healthy}
     restart: unless-stopped
 

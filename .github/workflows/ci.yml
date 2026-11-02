@@ -22,6 +22,8 @@ jobs:
         run: DAYS=1 STEP_S=60 python sim/coverage_sim.py > /dev/null
       - name: Financial model
         run: python model/financial_model.py > /dev/null
+      - name: Antenna trade, SGP4 check, readiness
+        run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python readiness/tracker.py > /dev/null
       - name: Strategy PDF
         run: python scripts/build_pdf.py
       - uses: actions/upload-artifact@v4
@@ -41,4 +43,4 @@ jobs:
         run: docker compose config -q
       - name: Build service images
         working-directory: ground
-        run: docker compose build ingest simulator sandf
+        run: docker compose build ingest simulator sandf gateway

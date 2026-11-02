@@ -23,7 +23,10 @@ for i in range(n):
     kind, cust, la, lo = KINDS[i % len(KINDS)]
     devs.append(dict(device_id=f"{kind}-{i:04d}", kind=kind, customer=cust,
                      lat=random.uniform(*la), lon=random.uniform(*lo)))
-print(f"simulator: {n} devices", flush=True)
+for d in devs:  # register once so the gateway can map frame short ids back to devices
+    prod.send("iot.register", {k: d[k] for k in ("device_id", "kind", "customer")})
+prod.flush()
+print(f"simulator: {n} devices registered", flush=True)
 while True:
     for d in random.sample(devs, max(1, n // 5)):
         d["lat"] += random.gauss(0, 0.01 if d["kind"] in ("vessel", "tracker", "collar") else 0)

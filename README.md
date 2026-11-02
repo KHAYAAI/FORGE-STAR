@@ -11,6 +11,9 @@ Africa's sovereign satellite data network. Strategy, models and Stage 0 platform
 | `model/` | Financial model, Stages 0–3 | `pip install pyyaml openpyxl && python3 model/financial_model.py` |
 | `ground/` | Stage 0 platform: devices → Kafka → store-and-forward satellites → TimescaleDB; ThingsBoard; SatNOGS | `cd ground && docker compose up -d` |
 | `ground/thingsboard/provision.py` | Creates ThingsBoard devices and the operations dashboard | `docker compose --profile full up -d` then `python3 ground/thingsboard/provision.py` |
+| `ground/gateway/` | Downlink handler: decodes satellite frames into device messages | runs in the stack |
+| `readiness/` | ICASA/ITU, funding, lab, orbit and customer milestones with dependencies | `python3 readiness/tracker.py` → `readiness/STATUS.md` |
+| `sim/antenna_trade.py`, `sim/sgp4_crosscheck.py` | Antenna options; orbit model validation | `python3 sim/antenna_trade.py` |
 | `tests/` | Test suite (also run by CI) | `pip install -r requirements.txt && python3 -m pytest` |
 | `docs/ntn-testbed-plan.md` | NB-IoT NTN lab plan | |
 | `research/` | Original inputs | |

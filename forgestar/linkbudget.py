@@ -50,9 +50,28 @@ class Link:
     rx_line_loss_db: float = 1.0
     sat_side: str = "rx"          # which end is the nadir-pointed satellite antenna
     sat_half_beam_deg: float = 30.0
+    # Satellite antenna pattern: "cos" (fixed nadir beam), "isoflux" (shaped: peak gain at the
+    # edge of coverage to cancel the longer range), "array" (electronically steered, scan loss)
+    sat_pattern: str = "cos"
+    edge_el_deg: float = 20.0      # isoflux: elevation where gain peaks (edge of coverage)
+    max_scan_deg: float = 60.0     # array: beyond this the beam can't be steered
+
+    def sat_gain_loss_db(self, el_deg: float, alt_km: float = 550.0) -> float:
+        """dB below the satellite antenna's peak gain toward a user at this elevation."""
+        off = off_nadir_deg(el_deg, alt_km)
+        if self.sat_pattern == "isoflux":
+            edge_off = off_nadir_deg(self.edge_el_deg, alt_km)
+            if off > edge_off:  # outside the shaped beam: fast roll-off
+                return pattern_loss_db(off - edge_off, 8.0)
+            return 20 * math.log10(slant_range_km(self.edge_el_deg, alt_km) / slant_range_km(el_deg, alt_km))
+        if self.sat_pattern == "array":
+            if off > self.max_scan_deg:
+                return 30.0
+            return -10 * 1.3 * math.log10(max(math.cos(math.radians(off)), 1e-3))  # cos^1.3 scan loss
+        return pattern_loss_db(off, self.sat_half_beam_deg)
 
     def snr_db(self, el_deg: float, alt_km: float = 550.0) -> float:
-        loss = pattern_loss_db(off_nadir_deg(el_deg, alt_km), self.sat_half_beam_deg)
+        loss = self.sat_gain_loss_db(el_deg, alt_km)
         tx_g = self.tx_gain_dbi - (loss if self.sat_side == "tx" else 0)
         rx_g = self.rx_gain_dbi - (loss if self.sat_side == "rx" else 0)
         eirp = self.tx_power_dbw + tx_g

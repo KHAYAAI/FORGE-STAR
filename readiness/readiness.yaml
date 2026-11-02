@@ -1,0 +1,83 @@
+# FORGE STAR path to readiness: the outside work that decides when service can start.
+# Edit statuses here, then run: python3 readiness/tracker.py   (writes readiness/STATUS.md)
+#
+# Months are counted from `start`. status: todo | doing | done | blocked
+# reverify: true marks regulatory/market facts to confirm with counsel before external use.
+# owner "TBD" = not yet assigned.
+
+start: 2026-12-01
+today: 2026-11-02     # override when updating; tracker also accepts --today
+
+workstreams:
+  spectrum: "Permission to transmit (ICASA + ITU)"
+  commercial: "Revenue before satellites"
+  ownership: "Ownership and corporate"
+  funding: "Funding"
+  lab: "Proof in the lab"
+  orbit: "Proof in orbit"
+  service: "Early service and operations"
+
+items:
+  # --- Permission to transmit ---
+  - {id: S1, ws: spectrum, title: "Brief specialist spectrum counsel; agree bands (S-band MSS/NB-IoT NTN, VHF AIS, X-band feeder)", start: 0, months: 2, owner: TBD, status: todo}
+  - {id: S2, ws: spectrum, title: "ICASA pre-application meeting (NGSO IoT/AIS, test licence for lab)", start: 1, months: 2, depends: [S1], owner: TBD, status: todo, reverify: true}
+  - {id: S3, ws: spectrum, title: "ICASA test/experimental licence for cabled + OTA lab work", start: 2, months: 4, depends: [S2], owner: TBD, status: todo, reverify: true}
+  - {id: S4, ws: spectrum, title: "Prepare and lodge NGSO network filing via ICASA to ITU (24–100 sats)", start: 3, months: 6, depends: [S2], owner: TBD, status: todo, reverify: true,
+     note: "Filing date starts the ITU clock: bring-into-use within 7 years, then deployment milestones (Res. 35: 10% / 50% / 100%). Re-verify."}
+  - {id: S5, ws: spectrum, title: "ITU coordination with affected operators", start: 9, months: 24, depends: [S4], owner: TBD, status: todo, reverify: true}
+  - {id: S6, ws: spectrum, title: "ICASA radio frequency spectrum licence + ECNS/ECS licences", start: 6, months: 12, depends: [S2, O2], owner: TBD, status: todo, reverify: true}
+  - {id: S7, ws: spectrum, title: "Landing rights in first SADC markets (Namibia, Botswana, Mozambique)", start: 18, months: 12, depends: [S6], owner: TBD, status: todo, reverify: true}
+  - {id: S8, ws: spectrum, title: "Bring-into-use: first satellite transmitting under the filing", start: 24, months: 3, depends: [S4, R3], owner: TBD, status: todo, reverify: true}
+
+  # --- Ownership ---
+  - {id: O1, ws: ownership, title: "Design cap table for the 30% HDG rule (model/assumptions.yaml ownership)", start: 0, months: 2, owner: TBD, status: doing}
+  - {id: O2, ws: ownership, title: "Incorporate FORGE STAR entity; shareholder agreement; HDG verification", start: 1, months: 3, depends: [O1], owner: TBD, status: todo, reverify: true}
+  - {id: O3, ws: ownership, title: "HDG anchor investor identified for seed (IDC / NEF / BEE fund)", start: 3, months: 6, depends: [O2], owner: TBD, status: todo}
+
+  # --- Revenue before satellites ---
+  - {id: C1, ws: commercial, title: "Ecosystem LOIs: FORGE Freight + maritime USV venture", start: 0, months: 2, owner: TBD, status: todo}
+  - {id: C2, ws: commercial, title: "IoT reseller agreement with an existing satellite IoT network", start: 0, months: 4, owner: TBD, status: todo}
+  - {id: C3, ws: commercial, title: "First SatNOGS station live (Johannesburg) on ground/ stack", start: 0, months: 2, owner: TBD, status: doing}
+  - {id: C4, ws: commercial, title: "First paying customers on resale (ecosystem + 1 mining group)", start: 3, months: 6, depends: [C1, C2, C3], owner: TBD, status: todo}
+  - {id: C5, ws: commercial, title: "Fisheries / Navy AIS pilot (DFFE or SA Navy)", start: 4, months: 9, depends: [C3], owner: TBD, status: todo}
+  - {id: C6, ws: commercial, title: "Ground-station services contract (foreign operator passes)", start: 4, months: 8, depends: [C3], owner: TBD, status: todo}
+
+  # --- Funding ---
+  - {id: F1, ws: funding, title: "TIA/DSI grant application: NB-IoT NTN lab", start: 1, months: 4, owner: TBD, status: todo, reverify: true}
+  - {id: F2, ws: funding, title: "Seed round closed (≈$2.5M, HDG anchor) — before year 2 starts", start: 6, months: 5, depends: [O3, C4], owner: TBD, status: todo,
+     note: "Monthly cash model: base case dips negative at the start of year 2 if the seed lands later."}
+  - {id: F3, ws: funding, title: "Series A ($15–30M) on early-service traction", start: 24, months: 6, depends: [R4], owner: TBD, status: todo}
+  - {id: F4, ws: funding, title: "Government capacity contract with prepayment", start: 24, months: 18, depends: [S6, R4], owner: TBD, status: todo}
+
+  # --- Proof in the lab ---
+  - {id: L1, ws: lab, title: "Buy lab kit (SDRs, GPSDO, NTN dev kits) — docs/ntn-testbed-plan.md", start: 4, months: 1, depends: [F1], owner: TBD, status: todo}
+  - {id: L2, ws: lab, title: "12-week NB-IoT NTN test-bed (attach, Doppler, link budget, store-and-forward)", start: 5, months: 3, depends: [L1, S3], owner: TBD, status: todo}
+  - {id: L3, ws: lab, title: "Antenna decision: patch + deep coverage for demo; isoflux for Stage 2 (sim/antenna_trade.py)", start: 6, months: 2, depends: [L2], owner: TBD, status: todo}
+
+  # --- Proof in orbit ---
+  - {id: R1, ws: orbit, title: "Bus partner quotes and MoU (Dragonfly Aerospace / CubeSpace)", start: 1, months: 4, owner: TBD, status: todo}
+  - {id: R2, ws: orbit, title: "Hosted-payload slot contracted (~$350k)", start: 8, months: 3, depends: [R1, F2, L3], owner: TBD, status: todo}
+  - {id: R3, ws: orbit, title: "Hosted payload built, qualified, launched, commissioned", start: 11, months: 12, depends: [R2], owner: TBD, status: todo}
+  - {id: R4, ws: orbit, title: "Own 6U–12U demonstrator launched; store-and-forward in orbit", start: 18, months: 12, depends: [R3, S6], owner: TBD, status: todo}
+
+  # --- Early service ---
+  - {id: V1, ws: service, title: "6–12 satellites at 45° (Stage 2 early service)", start: 30, months: 12, depends: [F3, S5], owner: TBD, status: todo}
+  - {id: V2, ws: service, title: "Mobile operator wholesale agreement", start: 30, months: 12, depends: [V1], owner: TBD, status: todo}
+
+# Plan options: overrides applied on top of the items above. The tracker compares their finish dates.
+# Each is cumulative only if it says so (list the earlier overrides again).
+scenarios:
+  parallel_seed:
+    _label: "Seed raise runs alongside the HDG-anchor search"
+    F2: {depends: [O2, C4]}
+  parallel_demo:
+    _label: "+ own demonstrator built in parallel with the hosted payload"
+    F2: {depends: [O2, C4]}
+    R4: {depends: [R2, S6], start: 12}
+  fast_track:
+    _label: "+ Series A on the hosted-payload result, tighter builds"
+    F2: {depends: [O2, C4]}
+    R4: {depends: [R2, S6], start: 12}
+    F3: {depends: [R3]}
+    R3: {months: 10}
+    V1: {months: 9}

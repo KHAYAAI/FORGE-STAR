@@ -63,8 +63,8 @@ def j2_rates(alt_km: float, inc: np.ndarray):
     return raan_dot, u_dot
 
 
-def propagate_ecef(c: Constellation, t: np.ndarray, j2: bool = True) -> np.ndarray:
-    """Satellite ECEF positions (km), shape (T, N, 3), for times t (s from epoch)."""
+def propagate_eci(c: Constellation, t: np.ndarray, j2: bool = True) -> np.ndarray:
+    """Satellite inertial positions (km), shape (T, N, 3), for times t (s from epoch)."""
     inc, raan0, u0 = c.elements()
     if j2:
         raan_dot, u_dot = j2_rates(c.alt_km, inc)
@@ -77,7 +77,14 @@ def propagate_ecef(c: Constellation, t: np.ndarray, j2: bool = True) -> np.ndarr
     x = r * (np.cos(O) * np.cos(u) - np.sin(O) * np.sin(u) * ci)
     y = r * (np.sin(O) * np.cos(u) + np.cos(O) * np.sin(u) * ci)
     z = r * (np.sin(u) * si) * np.ones_like(O)
-    th = OMEGA_E * t[:, None]
+    return np.stack([x, y, z], -1)
+
+
+def propagate_ecef(c: Constellation, t: np.ndarray, j2: bool = True, gmst0: float = 0.0) -> np.ndarray:
+    """Satellite Earth-fixed positions (km), shape (T, N, 3). gmst0 = Earth rotation angle at epoch (rad)."""
+    p = propagate_eci(c, t, j2)
+    th = (gmst0 + OMEGA_E * t)[:, None]
+    x, y, z = p[..., 0], p[..., 1], p[..., 2]
     return np.stack([np.cos(th) * x + np.sin(th) * y, -np.sin(th) * x + np.cos(th) * y, z], -1)
 
 
