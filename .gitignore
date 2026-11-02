@@ -6,3 +6,9 @@ ground/thingsboard/tokens.json
 ground/frames/*.bin
 ground/frames/done/
 ground/frames/bad/
+flight/fprime/build-fprime-automatic-*/
+build/
+hardware/build/
+*_sklib.py
+*.erc
+/*.log

@@ -10,6 +10,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, replace
 
+from pathlib import Path
+
 from .orbits import RE
 
 K_DBW = -228.6  # Boltzmann constant, dBW/K/Hz
@@ -90,29 +92,32 @@ class Link:
         return None
 
 
-# --- Illustrative FORGE STAR links. Replace with datasheet numbers. ---
-LINKS = {
-    # NB-IoT NTN uplink: 23 dBm device, 0 dBi antenna, single 3.75 kHz tone, deep repetitions.
-    "nbiot_uplink": Link("NB-IoT NTN uplink (device→sat), S-band", 2000.0,
-                         tx_power_dbw=-7.0, tx_gain_dbi=0.0, rx_gain_dbi=14.0, rx_noise_temp_k=500.0,
-                         bandwidth_hz=3750.0, required_snr_db=-8.0, other_losses_db=3.0,
-                         sat_side="rx", sat_half_beam_deg=30.0),
-    # NB-IoT NTN downlink: ~2 W into a 14 dBi patch array, 180 kHz carrier to a 0 dBi device.
-    "nbiot_downlink": Link("NB-IoT NTN downlink (sat→device), S-band", 2185.0,
-                           tx_power_dbw=3.0, tx_gain_dbi=14.0, rx_gain_dbi=0.0, rx_noise_temp_k=400.0,
-                           bandwidth_hz=180e3, required_snr_db=-6.0, other_losses_db=3.0,
-                           sat_side="tx", sat_half_beam_deg=30.0),
-    # AIS reception: 12.5 W class A ship, monopole on the satellite. Collisions limit it more than budget.
-    "ais_rx": Link("AIS receive (ship→sat), VHF", 162.0,
-                   tx_power_dbw=11.0, tx_gain_dbi=2.0, rx_gain_dbi=0.0, rx_noise_temp_k=1500.0,
-                   bandwidth_hz=14e3, required_snr_db=8.0, other_losses_db=5.0,
-                   sat_side="rx", sat_half_beam_deg=75.0),
-    # Feeder/TT&C downlink to the SA gateway: 2 W, 6 dBi patch, 3.7 m dish (~47 dBi at 8.1 GHz).
-    "feeder_downlink": Link("Feeder downlink (sat→gateway), X-band", 8100.0,
-                            tx_power_dbw=3.0, tx_gain_dbi=6.0, rx_gain_dbi=47.0, rx_noise_temp_k=150.0,
-                            bandwidth_hz=10e6, required_snr_db=5.0, other_losses_db=2.0,
-                            sat_side="tx", sat_half_beam_deg=60.0),
-}
+# --- Link parameters come from forgestar/params/rf.yaml (value + source + status per field). ---
+PARAMS_FILE = Path(__file__).parent / "params" / "rf.yaml"
+
+
+def load_links(path: Path = PARAMS_FILE) -> dict[str, Link]:
+    import yaml
+    raw = yaml.safe_load(path.read_text())
+    out = {}
+    for key, spec in raw.items():
+        kw = {k: (v["value"] if isinstance(v, dict) else v) for k, v in spec.items()}
+        out[key] = Link(**kw)
+    return out
+
+
+def param_status(path: Path = PARAMS_FILE) -> list[tuple[str, str, object, str, str]]:
+    """(link, field, value, status, source) for every parameter, for the verification register."""
+    import yaml
+    rows = []
+    for key, spec in yaml.safe_load(path.read_text()).items():
+        for f, v in spec.items():
+            if isinstance(v, dict):
+                rows.append((key, f, v["value"], v.get("status", "illustrative"), v.get("source", "")))
+    return rows
+
+
+LINKS = load_links()
 
 
 def table(alt_km: float = 550.0, elevations=(5, 10, 20, 30, 45, 60, 90)):

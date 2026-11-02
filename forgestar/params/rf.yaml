@@ -1,0 +1,56 @@
+# FORGE STAR radio link parameters. The link budget, coverage mask and antenna study read this file.
+# Each value: {value, source, status}. status: illustrative | quoted | datasheet | measured
+# Replace illustrative values with datasheet/measured ones and record the document in `source`.
+# docs/verification/VERIFY.md lists every value that is still illustrative.
+
+nbiot_uplink:
+  name: "NB-IoT NTN uplink (device→sat), S-band"
+  f_mhz:            {value: 2000.0, source: "3GPP Rel-17 n256 uplink band (1980–2010 MHz)", status: illustrative}
+  tx_power_dbw:     {value: -7.0,   source: "23 dBm UE power class 3", status: illustrative}
+  tx_gain_dbi:      {value: 0.0,    source: "typical IoT device antenna", status: illustrative}
+  rx_gain_dbi:      {value: 14.0,   source: "assumed 2×2 S-band patch", status: illustrative}
+  rx_noise_temp_k:  {value: 500.0,  source: "assumed LNA + Earth-view antenna", status: illustrative}
+  bandwidth_hz:     {value: 3750.0, source: "NB-IoT single-tone 3.75 kHz", status: illustrative}
+  required_snr_db:  {value: -8.0,   source: "NPUSCH with deep repetition, incl. implementation loss", status: illustrative}
+  other_losses_db:  {value: 3.0,    source: "polarisation + body + atmosphere allowance", status: illustrative}
+  sat_side: rx
+  sat_half_beam_deg: {value: 30.0,  source: "patch half-power half-angle", status: illustrative}
+
+nbiot_downlink:
+  name: "NB-IoT NTN downlink (sat→device), S-band"
+  f_mhz:            {value: 2185.0, source: "3GPP n256 downlink band (2170–2200 MHz)", status: illustrative}
+  tx_power_dbw:     {value: 3.0,    source: "assumed 2 W SSPA", status: illustrative}
+  tx_gain_dbi:      {value: 14.0,   source: "assumed 2×2 S-band patch", status: illustrative}
+  rx_gain_dbi:      {value: 0.0,    source: "typical IoT device antenna", status: illustrative}
+  rx_noise_temp_k:  {value: 400.0,  source: "device NF ~5 dB", status: illustrative}
+  bandwidth_hz:     {value: 180000.0, source: "NB-IoT carrier", status: illustrative}
+  required_snr_db:  {value: -6.0,   source: "NPDCCH/NPDSCH with repetition", status: illustrative}
+  other_losses_db:  {value: 3.0,    source: "allowance", status: illustrative}
+  sat_side: tx
+  sat_half_beam_deg: {value: 30.0,  source: "patch half-power half-angle", status: illustrative}
+
+ais_rx:
+  name: "AIS receive (ship→sat), VHF"
+  f_mhz:            {value: 162.0,  source: "AIS channels 161.975 / 162.025 MHz", status: datasheet}
+  tx_power_dbw:     {value: 11.0,   source: "Class A transponder 12.5 W (ITU-R M.1371)", status: datasheet}
+  tx_gain_dbi:      {value: 2.0,    source: "ship VHF whip", status: illustrative}
+  rx_gain_dbi:      {value: 0.0,    source: "satellite VHF monopole", status: illustrative}
+  rx_noise_temp_k:  {value: 1500.0, source: "VHF sky + receiver noise", status: illustrative}
+  bandwidth_hz:     {value: 14000.0, source: "GMSK 9.6 kbit/s channel", status: illustrative}
+  required_snr_db:  {value: 8.0,    source: "GMSK demod incl. loss", status: illustrative}
+  other_losses_db:  {value: 5.0,    source: "polarisation mismatch + Faraday rotation", status: illustrative}
+  sat_side: rx
+  sat_half_beam_deg: {value: 75.0,  source: "monopole pattern", status: illustrative}
+
+feeder_downlink:
+  name: "Feeder downlink (sat→gateway), X-band"
+  f_mhz:            {value: 8100.0, source: "X-band EESS/space research downlink allocation (8025–8400 MHz)", status: illustrative}
+  tx_power_dbw:     {value: 3.0,    source: "assumed 2 W X-band transmitter", status: illustrative}
+  tx_gain_dbi:      {value: 6.0,    source: "X-band patch", status: illustrative}
+  rx_gain_dbi:      {value: 47.0,   source: "3.7 m dish at 8.1 GHz, 60% efficiency", status: illustrative}
+  rx_noise_temp_k:  {value: 150.0,  source: "cryo-free LNA system temperature", status: illustrative}
+  bandwidth_hz:     {value: 10000000.0, source: "10 MHz channel", status: illustrative}
+  required_snr_db:  {value: 5.0,    source: "QPSK + RS(255,223) (forgestar/fec.py)", status: illustrative}
+  other_losses_db:  {value: 2.0,    source: "atmosphere + pointing", status: illustrative}
+  sat_side: tx
+  sat_half_beam_deg: {value: 60.0,  source: "patch", status: illustrative}

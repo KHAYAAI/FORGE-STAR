@@ -15,7 +15,13 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `forgestar/frames.py`: the store-and-forward downlink frame format (v1) shared by payload firmware and gateway. `ground/gateway/` decodes frames (Kafka `ground.frames`, a frames folder, or SatNOGS Network) into `iot.uplink`.
 - `sim/antenna_trade.py`: payload antenna options vs usable elevation and service. `sim/sgp4_crosscheck.py`: validates `forgestar/orbits.py` against SGP4.
 - `readiness/readiness.yaml` + `readiness/tracker.py`: the outside work (ICASA/ITU, ownership, funding, lab, orbit, customers) with dependencies → `readiness/STATUS.md` (critical path, late items, Gantt, plan options). Update statuses there.
-- `tests/`: pytest suite. `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
+- `forgestar/fec.py`: radio link layer (RS(255,223) CCSDS parameters, own encoder and decoder, CCSDS randomiser, ASM). Gateway decodes `.raw` captures and Kafka `link` blocks.
+- `flight/libforge/`: C99 flight core (frames, FEC encode, store-and-forward ring buffer), byte-identical to Python. Vectors: `flight/libforge/test/make_vectors.py`.
+- `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`) with the `StoreForward` component and its unit tests: `cd flight/fprime && fprime-util generate --ut && fprime-util check`.
+- `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage. Keys: `docker compose exec api python app.py create-key "<customer>"`.
+- `forgestar/params/rf.yaml`: radio parameters with source/status. `docs/verification/register.yaml` → `scripts/verify_register.py` → `docs/verification/VERIFY.md`: everything still to confirm.
+- `hardware/`: in-house PCB pipeline (SKiDL → KiCad pcbnew placement → Freerouting → DRC → fab zip). Board 1: payload interface board (`hardware/boards/pib/pib.py`).
+- `tests/`: pytest suite (`pytest.ini` limits collection to `tests/`). `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
 - `docs/ntn-testbed-plan.md`: NB-IoT NTN lab plan.
 - `research/`: original inputs (the Exosat analysis, the open-source stack map, the first FORGE STAR plan, the v1 strategy summary). Read-only reference.
 
@@ -57,7 +63,7 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - **Flight dynamics:** Orekit, GMAT, Skyfield
 - **Constellation emulation:** OpenSN
 - **Platform:** ThingsBoard, Kafka, PostgreSQL+TimescaleDB (hosted in SA)
-- **heypcb.ai:** payload processor, radio carriers, bus interface, ground and test boards. It doesn't cover structure, thermal, high-performance RF/antennas, radiation qualification or bus integration.
+- **PCB design:** in house with SKiDL + KiCad + Freerouting + kicad-cli (`hardware/`), instead of heypcb.ai. Fork open CubeSat boards (LibreCube, OreSat, PyCubed). Neither covers structure, thermal, high-performance RF/antennas, radiation qualification or bus integration.
 
 ## FORGE ecosystem links
 FORGE STAR provides connectivity for the other FORGE ventures:
@@ -69,12 +75,12 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 - **Autonomy/robotics:** telemetry
 
 ## Good next engineering tasks for Claude Code
-Done (Nov 2026): J2 orbits + SGP4 cross-check, link budget, antenna trade study, store-and-forward service, binary downlink frames + gateway handler, ThingsBoard provisioning (tested against a fake API), ownership + monthly cash, readiness tracker, CI.
-1. Run ThingsBoard for real (`--profile full`) and confirm the dashboard renders (Docker Hub rate-limited the image in build sessions).
-2. Payload firmware skeleton in F´ that produces `forgestar/frames.py` v1 frames, with a shared test vector.
-3. Orekit cross-check once orekit-data can be downloaded (needs gitlab.orekit.org access).
-4. Gateway: add FEC/CCSDS framing below v1 frames, and a SatNOGS decoder flowgraph for the demo satellite's modulation.
-5. Customer API (REST) on top of TimescaleDB for device data and SLA reports.
+Done (Nov 2026): flight core in C + F´ component, RS/CCSDS link layer, customer API, verification register, in-house PCB pipeline (board 1 placed), plus everything listed earlier.
+1. Autoroute the payload interface board (needs Freerouting approved to run) and review the routed board by hand.
+2. F´ deployment topology (rate group, command dispatcher, BufferManager, radio driver) around `StoreForward`, then run it on a dev board.
+3. CCSDS dual-basis transform in `forgestar/fec.py` and `flight/libforge` for third-party ground stations.
+4. ThingsBoard real run (`--profile full`); Docker Hub rate-limited the image in build sessions.
+5. Replace `illustrative` values in `forgestar/params/rf.yaml` and `model/assumptions.yaml` as datasheets and quotes arrive; re-run `scripts/verify_register.py`.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

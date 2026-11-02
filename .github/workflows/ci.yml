@@ -24,6 +24,8 @@ jobs:
         run: python model/financial_model.py > /dev/null
       - name: Antenna trade, SGP4 check, readiness
         run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python readiness/tracker.py > /dev/null
+      - name: Verification register
+        run: python scripts/verify_register.py > /dev/null
       - name: Strategy PDF
         run: python scripts/build_pdf.py
       - uses: actions/upload-artifact@v4
@@ -43,4 +45,46 @@ jobs:
         run: docker compose config -q
       - name: Build service images
         working-directory: ground
-        run: docker compose build ingest simulator sandf gateway
+        run: docker compose build ingest simulator sandf gateway api
+
+  hardware:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: KiCad + SKiDL
+        run: |
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends kicad kicad-symbols kicad-footprints
+          pip install --break-system-packages --no-deps skidl graphviz simp_sexp
+      - name: Payload interface board (ERC, placement, DRC, fab files)
+        run: |
+          if [ "${{ vars.FORGE_AUTOROUTE }}" = "1" ]; then
+            curl -sSL -o freerouting.jar https://github.com/freerouting/freerouting/releases/download/v1.9.0/freerouting-1.9.0.jar
+            export FREEROUTING_JAR=$PWD/freerouting.jar
+          fi
+          python3 hardware/boards/pib/pib.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pib-fab
+          path: hardware/build/pib/
+
+  flight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: libforge (C99) tests
+        run: |
+          cmake -S flight/libforge -B build/libforge
+          cmake --build build/libforge
+          ctest --test-dir build/libforge --output-on-failure
+      - name: F´ tools
+        run: pip install -r flight/fprime/fprime/requirements.txt
+      - name: StoreForward component unit tests
+        working-directory: flight/fprime
+        run: |
+          fprime-util generate --ut
+          fprime-util check -j4

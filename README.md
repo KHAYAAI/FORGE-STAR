@@ -14,6 +14,11 @@ Africa's sovereign satellite data network. Strategy, models and Stage 0 platform
 | `ground/gateway/` | Downlink handler: decodes satellite frames into device messages | runs in the stack |
 | `readiness/` | ICASA/ITU, funding, lab, orbit and customer milestones with dependencies | `python3 readiness/tracker.py` → `readiness/STATUS.md` |
 | `sim/antenna_trade.py`, `sim/sgp4_crosscheck.py` | Antenna options; orbit model validation | `python3 sim/antenna_trade.py` |
+| `flight/libforge/` | Flight core in C99 (store-and-forward, frames, error correction) | `cmake -S flight/libforge -B build/libforge && cmake --build build/libforge && ./build/libforge/test_libforge` |
+| `flight/fprime/` | NASA F´ flight software: `StoreForward` component + unit tests | `git submodule update --init --recursive`, then `cd flight/fprime && fprime-util generate --ut && fprime-util check` |
+| `ground/api/` | Customer REST API | http://localhost:8000/docs when the stack runs |
+| `hardware/` | In-house PCB pipeline (SKiDL → KiCad → Freerouting → fab files) | `python3 hardware/boards/pib/pib.py` |
+| `docs/verification/` | Everything still to confirm (claims, radio values, model inputs) | `python3 scripts/verify_register.py` |
 | `tests/` | Test suite (also run by CI) | `pip install -r requirements.txt && python3 -m pytest` |
 | `docs/ntn-testbed-plan.md` | NB-IoT NTN lab plan | |
 | `research/` | Original inputs | |

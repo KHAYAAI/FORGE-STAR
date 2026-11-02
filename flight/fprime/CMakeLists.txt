@@ -1,0 +1,7 @@
+# FORGE STAR flight software (F´ project).
+#   cd flight/fprime && fprime-util generate --ut && fprime-util check -j8   (component unit tests)
+cmake_minimum_required(VERSION 3.16)
+project(ForgeSat C CXX)
+include("${FPRIME_FRAMEWORK_PATH}/cmake/FPrime.cmake")
+include("${FPRIME_FRAMEWORK_PATH}/cmake/FPrime-Code.cmake")
+add_fprime_subdirectory("${CMAKE_CURRENT_LIST_DIR}/Components/StoreForward/")

@@ -8,7 +8,8 @@ The constellation is propagated with forgestar.orbits on an accelerated clock
 each output message carries ts = now - latency and received_ts = now, so the
 TimescaleDB view latency_hourly shows what customers of that constellation would see.
 
-By default (EMIT=frames) it sends binary forgestar.frames v1 frames to Kafka
+By default (EMIT=frames) it sends forgestar.frames v1 frames, wrapped in
+forgestar.fec link blocks (Reed–Solomon + randomiser + sync marker), to Kafka
 ground.frames, exactly as the payload will downlink them, and ground/gateway
 decodes them. When the real payload flies, only this service goes away.
 """
@@ -24,7 +25,9 @@ import numpy as np
 from forgestar.orbits import Constellation, Site, look, propagate_ecef
 from forgestar.logic import Buffer, Pending, step
 from forgestar.frames import Record, pack, short_id
+from forgestar.fec import encode_block
 import base64
+import random
 
 SATS = int(os.environ.get("SATS", 24))
 PLANES = int(os.environ.get("PLANES", 4))
@@ -36,6 +39,7 @@ GATEWAY_MASK = float(os.environ.get("GATEWAY_MASK_DEG", 10))
 BUFFER_MSGS = int(os.environ.get("BUFFER_MSGS", 200000))
 DOWNLINK_MSGS_PER_S = int(os.environ.get("DOWNLINK_MSGS_PER_S", 2000))
 EMIT = os.environ.get("EMIT", "frames")  # frames: binary frames to ground.frames (production path); json: straight to iot.uplink
+CHANNEL_BER = float(os.environ.get("CHANNEL_BER", 0))  # inject random bit errors to exercise FEC
 GATEWAYS = [Site("Hartebeesthoek", "SA", -25.89, 27.69), Site("Cape Town", "SA", -33.93, 18.42)]
 
 
@@ -78,7 +82,11 @@ def main():
                 by_sat[sat_id].append(Record(short_id(m["device_id"]), int(now - latency_sim_s), m["lat"], m["lon"], m["data"]))
             for sat_id, recs in by_sat.items():
                 for raw in pack(sat_id, seq[sat_id], int(now), recs):
-                    prod.send("ground.frames", {"frame": base64.b64encode(raw).decode(), "received_ts": now})
+                    blk = bytearray(encode_block(raw))      # what the radio actually transmits
+                    if CHANNEL_BER:
+                        for i in range(len(blk) * 8):
+                            if random.random() < CHANNEL_BER: blk[i // 8] ^= 1 << (i % 8)
+                    prod.send("ground.frames", {"link": base64.b64encode(bytes(blk)).decode(), "received_ts": now})
                     seq[sat_id] += 1; stats["frames"] += 1
         if out: prod.flush()
         if now - last_report > 30:

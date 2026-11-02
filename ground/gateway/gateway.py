@@ -5,7 +5,8 @@ messages on Kafka iot.uplink. Frame sources, all optional and combinable:
 
   * Kafka topic ground.frames   - frames from the simulated space segment (sandf, EMIT=frames)
                                   or from a modem/SDR decoder on the gateway LAN
-  * FRAME_DIR                   - a folder of *.bin files (e.g. satnogs-client output); moved to done/ or bad/
+  * FRAME_DIR                   - *.bin (decoded v1 frames) or *.raw (demodulated bytes, FEC-decoded here)
+                                  e.g. satnogs-client output; files move to done/ or bad/
   * SATNOGS_STATION_ID + token  - polls SatNOGS Network for this station's observations of NORAD_ID
                                   and fetches their demodulated data (hex frames)
 
@@ -22,17 +23,28 @@ import time
 from collections import OrderedDict
 from pathlib import Path
 
+from forgestar.fec import decode_stream
 from forgestar.frames import FrameError, decode, short_id
 
 SEEN_MAX = 100000
 
 
 class Gateway:
-    def __init__(self, publish, registry):
+    def __init__(self, publish, registry, grace_s: float = 0.0):
         self.publish = publish          # callable(dict)
         self.registry = registry        # callable(short_id) -> dict | None
+        self.grace_s = grace_s          # hold records of unregistered devices this long before giving up
+        self.unresolved: list[tuple[float, int, dict]] = []
         self.seen: OrderedDict = OrderedDict()
-        self.stats = {"frames": 0, "records": 0, "duplicates": 0, "bad": 0, "unknown_device": 0}
+        self.stats = {"frames": 0, "records": 0, "duplicates": 0, "bad": 0, "unknown_device": 0,
+                      "link_blocks": 0, "fec_corrected_bytes": 0, "fec_failed": 0}
+
+    def handle_link(self, stream: bytes, source: str, received_ts: float | None = None) -> int:
+        """Raw received bytes (one or more link blocks, with noise) -> FEC decode -> frames."""
+        frames, st = decode_stream(stream)
+        self.stats["link_blocks"] += st["blocks"]; self.stats["fec_corrected_bytes"] += st["corrected_bytes"]
+        self.stats["fec_failed"] += st["failed"]
+        return sum(self.handle(f, source, received_ts) or 0 for f in frames)
 
     def handle(self, raw: bytes, source: str, received_ts: float | None = None) -> int | None:
         """Records published, 0 for a duplicate frame, None for an undecodable frame."""
@@ -51,23 +63,48 @@ class Gateway:
         now = received_ts if received_ts is not None else time.time()
         n = 0
         for r in f.records:
+            msg = {"ts": r.t_created, "received_ts": now, "path": "satellite", "sat": f.sat_id,
+                   "lat": r.lat, "lon": r.lon, "data": r.payload, "frame_seq": f.seq, "source": source}
             dev = self.registry(r.device_short_id)
-            if not dev:
-                self.stats["unknown_device"] += 1
-                dev = {"device_id": f"unknown-{r.device_short_id:08x}", "kind": "unknown", "customer": "unregistered"}
-            self.publish({**dev, "ts": r.t_created, "received_ts": now, "path": "satellite", "sat": f.sat_id,
-                          "lat": r.lat, "lon": r.lon, "data": r.payload, "frame_seq": f.seq, "source": source})
+            if dev:
+                self.publish({**dev, **msg})
+            elif self.grace_s > 0:
+                self.unresolved.append((time.time(), r.device_short_id, msg))  # registration may still be in flight
+            else:
+                self._publish_unknown(r.device_short_id, msg)
             n += 1
         self.stats["records"] += n
         return n
 
 
+    def _publish_unknown(self, sid: int, msg: dict):
+        self.stats["unknown_device"] += 1
+        self.publish({"device_id": f"unknown-{sid:08x}", "kind": "unknown", "customer": "unregistered", **msg})
+
+    def retry_unresolved(self, now: float | None = None):
+        now = time.time() if now is None else now
+        keep = []
+        for t0, sid, msg in self.unresolved:
+            dev = self.registry(sid)
+            if dev:
+                self.publish({**dev, **msg})
+            elif now - t0 >= self.grace_s:
+                self._publish_unknown(sid, msg)
+            else:
+                keep.append((t0, sid, msg))
+        self.unresolved = keep
+
+
 def scan_dir(gw: Gateway, d: Path):
     for sub in ("done", "bad"):
         (d / sub).mkdir(exist_ok=True)
-    for p in sorted(d.glob("*.bin")):
+    for p in sorted(d.glob("*.bin")):          # already-decoded v1 frames
         n = gw.handle(p.read_bytes(), f"file:{p.name}")
         p.rename(d / ("bad" if n is None else "done") / p.name)
+    for p in sorted(d.glob("*.raw")):          # raw demodulated bytes from the radio: needs FEC
+        before = gw.stats["link_blocks"]
+        gw.handle_link(p.read_bytes(), f"file:{p.name}")
+        p.rename(d / ("done" if gw.stats["link_blocks"] > before else "bad") / p.name)
 
 
 def poll_satnogs(gw: Gateway, station: str, norad: str, token: str, since: dict):
@@ -84,7 +121,7 @@ def poll_satnogs(gw: Gateway, station: str, norad: str, token: str, since: dict)
                 raw = bytes.fromhex(raw.decode().strip())  # SatNOGS stores frames as hex text
             except (UnicodeDecodeError, ValueError):
                 pass
-            gw.handle(raw, f"satnogs:{obs['id']}")
+            gw.handle_link(raw, f"satnogs:{obs['id']}")
         since["last"] = max(since.get("last", 0), obs["id"])
 
 
@@ -102,13 +139,16 @@ def main():
             time.sleep(2)
     cache: dict[int, dict] = {}
 
+    last_load = [0.0]
+
     def registry(sid: int):
-        if sid not in cache:
+        if sid not in cache and time.time() - last_load[0] > 2:  # reload at most every 2 s
+            last_load[0] = time.time()
             for dev_id, kind, cust in db.execute("SELECT device_id, kind, customer FROM devices"):
                 cache[short_id(dev_id)] = {"device_id": dev_id, "kind": kind, "customer": cust}
         return cache.get(sid)
 
-    gw = Gateway(lambda m: prod.send("iot.uplink", m), registry)
+    gw = Gateway(lambda m: prod.send("iot.uplink", m), registry, grace_s=float(os.environ.get("UNKNOWN_GRACE_S", 60)))
     frame_dir = Path(os.environ["FRAME_DIR"]) if os.environ.get("FRAME_DIR") else None
     station, norad = os.environ.get("SATNOGS_STATION_ID"), os.environ.get("NORAD_ID")
     since, last_poll, last_report = {}, 0.0, time.time()
@@ -117,12 +157,16 @@ def main():
     while True:
         for msg in cons:
             env = json.loads(msg.value)
-            gw.handle(base64.b64decode(env["frame"]), "kafka", env.get("received_ts"))
+            if "link" in env:
+                gw.handle_link(base64.b64decode(env["link"]), "kafka", env.get("received_ts"))
+            else:
+                gw.handle(base64.b64decode(env["frame"]), "kafka", env.get("received_ts"))
         if frame_dir: scan_dir(gw, frame_dir)
         if station and norad and time.time() - last_poll > 300:
             try: poll_satnogs(gw, station, norad, os.environ.get("SATNOGS_API_TOKEN", ""), since)
             except Exception as e: print(f"gateway: SatNOGS poll failed: {e}", flush=True)
             last_poll = time.time()
+        gw.retry_unresolved()
         prod.flush()
         if time.time() - last_report > 30:
             print(f"gateway: {gw.stats}", flush=True); last_report = time.time()

@@ -1,0 +1,86 @@
+# FORGE STAR verification register: claims that must be confirmed before external use.
+# status: unverified | web-checked | counsel-confirmed | quoted | measured
+# Web-checked means public sources were read on the date shown. It is not legal advice.
+checked_on: 2026-11-02
+
+claims:
+  - id: R1
+    area: regulatory
+    claim: "ICASA requires 30% historically-disadvantaged-group (HDG) equity in ECNS/ECS licensees, which blocks Starlink."
+    used_in: [docs/strategy.md §01, model/assumptions.yaml ownership]
+    status: web-checked
+    finding: >-
+      Starlink still had no ICASA licence in mid/late 2026. ICASA says equity-equivalent programmes need an
+      amendment to the Electronic Communications Act; no amendment confirmed as enacted.
+    sources:
+      - https://www.advanced-television.com/2026/05/14/icasa-says-stouh-africa-needs-new-legislation-for-starlink/
+      - https://furtherafrica.com/2026/08/27/starlink-south-africa-edges-closer-to-a-licence/
+      - https://www.newsroom.co.za/starlink-blocked-by-icasa-equity-rules-in-south-africa/
+    confirm_by: "Spectrum / telecoms counsel"
+  - id: R2
+    area: regulatory
+    claim: "Equity-equivalent investment programmes (EEIP) could let foreign operators in without 30% HDG equity."
+    used_in: [docs/strategy.md §12 risks]
+    status: web-checked
+    finding: >-
+      Ministerial policy direction (Dec 2025) recognises EEIPs. The minister said in 2026 that legislative
+      amendments would be pursued. SpaceX has pledged ~R2bn local investment. This is the main threat to the moat: watch it.
+    sources:
+      - https://www.techinafrica.com/is-starlink-legal-south-africa-icasa-rules-licensing-2026/
+      - https://www.advanced-television.com/2026/05/14/icasa-says-stouh-africa-needs-new-legislation-for-starlink/
+    confirm_by: "Spectrum / telecoms counsel"
+  - id: R3
+    area: regulatory
+    claim: "ITU NGSO filings: bring into use within 7 years, then deploy 10% / 50% / 100% within 2 / 5 / 7 years (Resolution 35)."
+    used_in: [readiness/readiness.yaml S4, S8]
+    status: web-checked
+    finding: >-
+      Resolution 35 (WRC-19, revised WRC-23) milestones 10/50/100% at 2/5/7 years after the end of the
+      bring-into-use period. Missing M1 caps the filing at 10× deployed; M2 at 2×. Check the consolidated RR text.
+    sources:
+      - https://www.itu.int/hub/2020/01/itu-members-agree-to-new-milestones-for-non-geostationary-satellite-deployment/
+      - "https://www.itu.int/en/ITU-R/seminars/wrs/Documents/2024/Space-Workshops/Resolution 8 and 35.pdf"
+    confirm_by: "Spectrum counsel (ITU filing specialist)"
+  - id: R4
+    area: regulatory
+    claim: "NB-IoT NTN can use 3GPP band n256 (S-band MSS, 1980–2010 / 2170–2200 MHz) in South Africa."
+    used_in: [forgestar/params/rf.yaml]
+    status: unverified
+    finding: "Band availability in SA (MSS assignments, incumbents) not checked."
+    sources: []
+    confirm_by: "Spectrum counsel + ICASA pre-application meeting"
+  - id: M1
+    area: market
+    claim: "Satellite IoT pricing: new LEO entrants ~$1–€8 per device per month; legacy $40–70."
+    used_in: [docs/strategy.md §04]
+    status: unverified
+    sources: []
+    confirm_by: "Sales lead (competitor quotes)"
+  - id: M2
+    area: market
+    claim: "Starlink ~10M subscribers, ~$11B connectivity revenue; OneWeb ~650 satellites; Guowang/Qianfan a few hundred."
+    used_in: [docs/strategy.md §10]
+    status: unverified
+    sources: []
+    confirm_by: "Founder (re-check before each external deck)"
+  - id: C1
+    area: commercial
+    claim: "Hosted-payload slot ~$350k; 6U–12U launch $80–250k per slot; bus+payload $0.5–1.8M per satellite."
+    used_in: [model/assumptions.yaml constellation]
+    status: unverified
+    sources: []
+    confirm_by: "Bus partner quotes (Dragonfly / CubeSpace), launch broker"
+  - id: C2
+    area: commercial
+    claim: "Bus can supply 25–40 W to the payload during passes (needed for the isoflux antenna)."
+    used_in: [sim/antenna_trade.py]
+    status: unverified
+    sources: []
+    confirm_by: "Bus partner"
+  - id: O1
+    area: ownership
+    claim: "Founder and shareholder HDG status as modelled (placeholders)."
+    used_in: [model/assumptions.yaml ownership]
+    status: unverified
+    sources: []
+    confirm_by: "Counsel / B-BBEE verification agency"

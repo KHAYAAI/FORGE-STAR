@@ -153,6 +153,19 @@ The sellable version: FORGE STAR as government's sovereign operator for rural co
 
 heypcb.ai is AI-assisted circuit-board design: schematics, routing, Gerbers, BOMs and KiCad projects, with a Circuit World library of 8,800+ open-hardware boards to fork. **It builds:** payload processor boards, NB-IoT/AIS radio carrier boards, payload-to-bus interface boards, ground-station and test electronics. **It does not handle:** structure, thermal design, high-performance RF and antennas, radiation qualification, or bus integration.
 
+#### In-house PCB pipeline (open-source alternative to heypcb.ai)
+
+`hardware/` builds boards from code with open-source tools only. SKiDL describes the circuit using KiCad's libraries. KiCad's Python API places the parts and applies the rules. Freerouting autoroutes. KiCad checks the design and exports Gerbers, drill files, pick-and-place data and a BOM. The first board is the **payload interface board**: an STM32L432 running the flight core, CAN to the bus, a radio power switch, current and temperature telemetry. It passes the electrical rule check with no errors and is placed with no blocking DRC issues. Autorouting is the next step.
+
+Proven open CubeSat boards (LibreCube, OreSat, PyCubed, BIRDS) replace heypcb's library of boards to fork. ngspice and openEMS cover circuit and antenna simulation. **We can do the board work in house.** As with heypcb, it doesn't cover radiation qualification, thermal design, RF tuning or bus integration.
+
+#### Flight software, radio link and customer API
+
+- **Flight core (`flight/libforge`).** Portable C99 with no dynamic memory: the store-and-forward buffer, frame encoding and Reed–Solomon error correction. Its output is byte-identical to the Python ground code, which the shared test vectors prove.
+- **F´ component (`flight/fprime`).** `StoreForward` wraps the core with commands, telemetry and events. It's built and unit-tested in NASA F´ v3.5.1, and the ground decodes its downlink.
+- **Radio link layer.** RS(255,223) with CCSDS parameters, the CCSDS randomiser and a sync marker. It corrects up to 16 bad bytes per 255-byte block. The basis transform needed to work with third-party CCSDS stations is a known to-do.
+- **Customer API (`ground/api`).** Per-customer keys, devices, messages, delivery SLA and monthly usage, with data hosted in SA.
+
 #### Can we physically build the satellite?
 
 Yes, with the bus bought in. The four things that decide whether it is actually usable are: **(1) permission to transmit** (ICASA licence + ITU filing; without it a satellite is scrap in orbit), **(2) qualification** (vibration, thermal vacuum, radiation), **(3) launch** (achievable but external, rideshare via broker, dates slip), and **(4) something on the ground to talk to** (NTN devices and enough coverage for the use case).

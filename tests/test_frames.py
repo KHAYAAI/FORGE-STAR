@@ -1,4 +1,5 @@
 import sys
+import time
 from pathlib import Path
 import pytest
 from forgestar.frames import MAX_FRAME, Frame, FrameError, Record, decode, pack, short_id
@@ -57,3 +58,26 @@ def test_gateway_frame_dir(tmp_path):
     gwmod.scan_dir(g, tmp_path)
     assert (tmp_path / "done" / "pass1-again.bin").exists()
     assert (tmp_path / "done" / "pass1.bin").exists() and (tmp_path / "bad" / "junk.bin").exists() and len(out) == 1
+
+
+def test_gateway_link_with_errors():
+    from forgestar.fec import encode_block
+    import random
+    out = []; g = gwmod.Gateway(out.append, lambda s: None)
+    blk = bytearray(encode_block(Frame(2, 5, 0, [rec(i) for i in range(10)]).encode()))
+    for p in random.Random(9).sample(range(4, len(blk)), 10): blk[p] ^= 0x5A
+    assert g.handle_link(b"noise" + bytes(blk), "test") == 10
+    assert g.stats["fec_corrected_bytes"] == 10 and g.stats["link_blocks"] == 1
+
+
+def test_gateway_holds_unregistered_devices_until_registered():
+    out, reg = [], {}
+    g = gwmod.Gateway(out.append, reg.get, grace_s=60)
+    g.handle(Frame(1, 1, 0, [rec(1)]).encode(), "test")
+    assert out == [] and len(g.unresolved) == 1
+    reg[short_id("pump-0001")] = {"device_id": "pump-0001", "kind": "pump", "customer": "Mine"}
+    g.retry_unresolved()
+    assert out[0]["device_id"] == "pump-0001" and not g.unresolved and g.stats["unknown_device"] == 0
+    g.handle(Frame(1, 2, 0, [rec(2)]).encode(), "test")
+    g.retry_unresolved(now=time.time() + 61)          # never registered -> published as unknown after grace
+    assert out[-1]["device_id"].startswith("unknown-")

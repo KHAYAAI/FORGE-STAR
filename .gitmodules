@@ -1,0 +1,3 @@
+[submodule "flight/fprime/fprime"]
+	path = flight/fprime/fprime
+	url = https://github.com/nasa/fprime.git

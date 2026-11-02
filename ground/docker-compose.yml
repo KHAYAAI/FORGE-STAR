@@ -77,7 +77,8 @@ services:
       PLANES: ${PLANES:-4}
       INC: ${INC:-45}
       SPEEDUP: ${SPEEDUP:-60}
-      EMIT: frames   # binary downlink frames -> ground.frames -> gateway (set json to bypass the gateway)
+      EMIT: frames   # FEC link blocks -> ground.frames -> gateway (set json to bypass the gateway)
+      CHANNEL_BER: ${CHANNEL_BER:-0.0005}   # simulated radio bit-error rate; FEC corrects it
     depends_on:
       kafka: {condition: service_healthy}
     restart: unless-stopped
@@ -99,6 +100,16 @@ services:
     depends_on:
       timescaledb: {condition: service_healthy}
       kafka: {condition: service_healthy}
+    restart: unless-stopped
+
+  api:
+    # Customer REST API (FastAPI): http://localhost:8000/docs
+    build: ./api
+    environment:
+      PG_DSN: postgresql://forge:${PG_PASSWORD:-forge-dev-only}@timescaledb:5432/forgestar
+    ports: ["8000:8000"]
+    depends_on:
+      timescaledb: {condition: service_healthy}
     restart: unless-stopped
 
   simulator:
