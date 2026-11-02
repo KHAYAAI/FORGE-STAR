@@ -2,7 +2,8 @@
 #   docker compose up -d                 # core: TimescaleDB, Kafka, ingest, device simulator
 #   docker compose --profile full up -d  # + ThingsBoard (device management, dashboards; ~2 GB RAM)
 #   docker compose --profile radio up -d # + SatNOGS client (needs an SDR on USB)
-# Data path: devices / ground station -> Kafka (iot.uplink) -> ingest -> TimescaleDB (+ ThingsBoard)
+# Data path: devices -> Kafka iot.device_tx -> sandf (simulated satellites, store-and-forward)
+#            -> Kafka iot.uplink -> ingest -> TimescaleDB (+ ThingsBoard). Resale/terrestrial traffic goes straight to iot.uplink.
 name: forge-star
 
 services:
@@ -57,8 +58,26 @@ services:
       KAFKA_BOOTSTRAP: kafka:9092
       PG_DSN: postgresql://forge:${PG_PASSWORD:-forge-dev-only}@timescaledb:5432/forgestar
       TB_URL: http://thingsboard:9090
+      TB_TOKENS_FILE: /tb/tokens.json   # written by ground/thingsboard/provision.py
+    volumes:
+      - ./thingsboard:/tb:ro
     depends_on:
       timescaledb: {condition: service_healthy}
+      kafka: {condition: service_healthy}
+    restart: unless-stopped
+
+  sandf:
+    # Simulated space segment: 24 sats at 45° by default, clock sped up 60x.
+    build:
+      context: ..
+      dockerfile: ground/sandf/Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      SATS: ${SATS:-24}
+      PLANES: ${PLANES:-4}
+      INC: ${INC:-45}
+      SPEEDUP: ${SPEEDUP:-60}
+    depends_on:
       kafka: {condition: service_healthy}
     restart: unless-stopped
 
@@ -69,6 +88,7 @@ services:
       KAFKA_BOOTSTRAP: kafka:9092
       DEVICES: "50"
       INTERVAL_S: "5"
+      SAT_SHARE: "0.7"   # share of traffic sent over the satellite path (rest = resale/terrestrial)
     depends_on:
       kafka: {condition: service_healthy}
     restart: unless-stopped

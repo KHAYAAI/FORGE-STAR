@@ -1,4 +1,4 @@
-"""Fake FORGE STAR field devices. Store-and-forward: messages are delayed like a satellite pass would delay them."""
+"""Fake FORGE STAR field devices. Satellite traffic goes to iot.device_tx (sandf delays it like real passes); resale traffic straight to iot.uplink."""
 import json, os, random, time
 from kafka import KafkaProducer
 
@@ -17,6 +17,7 @@ for _ in range(60):
     except Exception:
         time.sleep(2)
 n = int(os.environ.get("DEVICES", 50)); step = float(os.environ.get("INTERVAL_S", 5))
+sat_share = float(os.environ.get("SAT_SHARE", 0.7))
 devs = []
 for i in range(n):
     kind, cust, la, lo = KINDS[i % len(KINDS)]
@@ -30,7 +31,11 @@ while True:
         if d["kind"] == "pump":   data |= {"flow_lpm": round(random.uniform(0, 400), 1), "running": random.random() > .1}
         if d["kind"] == "soil":   data |= {"moisture_pct": round(random.uniform(5, 45), 1)}
         if d["kind"] == "vessel": data |= {"mmsi": 601000000 + int(d["device_id"][-4:]), "sog_kn": round(random.uniform(0, 12), 1)}
-        delay = random.choice([0, 0, 60, 600, 1800])   # resale/ground = 0, satellite store-and-forward = minutes
-        prod.send("iot.uplink", dict(ts=time.time() - delay, device_id=d["device_id"], kind=d["kind"], customer=d["customer"],
-                                     path="sim", lat=round(d["lat"], 5), lon=round(d["lon"], 5), data=data))
+        m = dict(ts=time.time(), device_id=d["device_id"], kind=d["kind"], customer=d["customer"],
+                 lat=round(d["lat"], 5), lon=round(d["lon"], 5), data=data)
+        if random.random() < sat_share:
+            prod.send("iot.device_tx", m)                   # over our satellites (store-and-forward)
+        else:
+            m.update(path="resale", ts=time.time() - random.uniform(5, 60))  # partner network, near-real-time
+            prod.send("iot.uplink", m)
     prod.flush(); time.sleep(step)

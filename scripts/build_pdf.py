@@ -12,6 +12,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 pdfmetrics.registerFont(TTFont("Sans", "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
 pdfmetrics.registerFont(TTFont("Sans-Bold", "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"))
+pdfmetrics.registerFont(TTFont("Mono", "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"))
 _cond = Path("/usr/share/fonts/truetype/dejavu/DejaVuSansCondensed-Bold.ttf")
 if not _cond.exists():  # condensed face not installed everywhere; fall back to regular bold
     _cond = Path("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf")
@@ -145,11 +146,12 @@ doc.addPageTemplates([PageTemplate("cover", frames=[fr], onPage=cover),
 #   - item              bullet
 #   | a | b |           table (first row header; a "**Total**" first cell styles the last row)
 #   *text*              whole-paragraph italics → small muted note
-#   **bold**, *italic*  inline
+#   **bold**, *italic*, `code`  inline
 #   ---                 ignored (section breaks are implicit)
 
 def inline(t):
     t = t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    t = re.sub(r"`([^`]+)`", r'<font name="Mono" size="7.6">\1</font>', t)
     t = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", t)
     t = re.sub(r"(?<![\w*])\*(?!\s)(.+?)(?<!\s)\*(?![\w*])", r"<i>\1</i>", t)
     return t

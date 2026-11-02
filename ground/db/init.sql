@@ -11,7 +11,8 @@ CREATE TABLE IF NOT EXISTS devices (
 CREATE TABLE IF NOT EXISTS uplinks (
     time        TIMESTAMPTZ NOT NULL,
     device_id   TEXT NOT NULL,
-    path        TEXT NOT NULL,          -- resale | satellite | ground | sim
+    path        TEXT NOT NULL,          -- resale | satellite | ground
+    sat         INTEGER,                -- satellite that carried it (store-and-forward)
     lat         DOUBLE PRECISION,
     lon         DOUBLE PRECISION,
     payload     JSONB NOT NULL,
@@ -28,3 +29,14 @@ SELECT time_bucket('1 hour', time) AS bucket, path,
        avg(extract(epoch FROM received_at - time)) AS avg_latency_s,
        max(extract(epoch FROM received_at - time)) AS max_latency_s
 FROM uplinks GROUP BY bucket, path WITH NO DATA;
+
+SELECT add_continuous_aggregate_policy('latency_hourly',
+    start_offset => INTERVAL '3 days', end_offset => INTERVAL '1 minute', schedule_interval => INTERVAL '5 minutes');
+
+-- Latency percentiles by path: what an SLA ("95% within X minutes") is written against.
+CREATE OR REPLACE VIEW latency_sla AS
+SELECT path, count(*) AS messages,
+       percentile_cont(0.5)  WITHIN GROUP (ORDER BY extract(epoch FROM received_at - time)) / 60 AS p50_min,
+       percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM received_at - time)) / 60 AS p95_min,
+       max(extract(epoch FROM received_at - time)) / 60 AS max_min
+FROM uplinks WHERE time > now() - INTERVAL '7 days' GROUP BY path;

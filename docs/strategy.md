@@ -175,26 +175,39 @@ LEO satellites cannot be parked over South Africa: they circle Earth roughly eve
 
 #### Simulation check (November 2026)
 
-`sim/coverage_sim.py` simulates Walker constellations at 550 km over 13 sites from Cape Town to Tunis, including the SA EEZ and Marion Island. It runs over two days with Earth rotation, and the worst site in each region is shown.
+`sim/coverage_sim.py` simulates Walker constellations at 550 km over 13 sites from Cape Town to Tunis, including the SA EEZ and Marion Island. It includes Earth's rotation and J2 drift, and runs over three days. The elevation mask comes from the link budget (below). The worst site in each region is shown.
 
-| Constellation | SA typical wait | SA longest wait (20° / 10° elev.) | Africa longest wait (20° / 10°) |
-|---|---|---|---|
-| **1 sat, SSO rideshare** | 8–10 h | 13 h / 13 h | 48 h / 13 h |
-| **6 sats, 45°** | 45–65 min | 6.3 h / 5.2 h | 10 h / 9 h |
-| **12 sats, 45°** | 20–35 min | 5.9 h / 4.2 h | 5.9 h / 4.6 h |
-| **24 sats, 45°** | 8–15 min | 2.2 h / 64 min | 4.2 h / 3.3 h |
-| **48 sats, 45°** | 4–7 min | 1.5 h / 8 min | 2.1 h / 76 min |
-| **80 sats, 50°** | 1–5 min | 34 min / 3 min | 73 min / 22 min |
-| **120–150 sats, 50°** | ~0–3 min | 2–5 min / none | 36 min / 1 min |
+| Constellation | SA typical wait | SA longest wait | Africa longest wait | Gateway passes/day |
+|---|---|---|---|---|
+| **1 sat, SSO rideshare** | ~10 h | 13 h | 72 h | 3 |
+| **6 sats, 45°** | ~75 min | 6.9 h | 11 h | 27 |
+| **12 sats, 45°** | ~40 min | 5.9 h | 5.9 h | 56 |
+| **24 sats, 45°** | ~17 min | 2.8 h | 4.2 h | 113 |
+| **48 sats, 45°** | ~8 min | 1.7 h | 2.3 h | 221 |
+| **80 sats, 50°** | ~5 min | 44 min | 83 min | 320 |
+| **120–150 sats, 50°** | 2–3 min | 3–6 min | 44 min | 480–600 |
+
+Mask: 22°, where the NB-IoT uplink closes with a 3 dB margin. A 10° mask (`MIN_ELEV_DEG=10`) roughly halves the longest waits.
 
 What changes:
-- **On average, the original numbers hold up.** 16–24 satellites give SA a typical wait of 8–15 minutes.
-- **The longest wait is worse than assumed.** Promising "every 20–40 minutes, guaranteed" needs **~36–48 satellites for SA** and **~80 for Africa**, and only with a 10° elevation mask. At 20°, it needs ~80 for SA.
-- **Sell typical latency, not worst case**, until Stage 3. Customer SLAs should be written as "95% of messages within X".
+- **On average, the original numbers hold up.** 16–24 satellites give SA a typical wait of about 15–20 minutes.
+- **The longest wait is worse than assumed.** Promising "every 20–40 minutes, guaranteed" needs **~48–80 satellites for SA** and **~80–120 for Africa**.
+- **Sell typical latency, not worst case**, until Stage 3. Customer SLAs should be written as "95% of messages within X". The platform's `latency_sla` view measures exactly this.
 - **A 45° inclination beats sun-synchronous (SSO)** for Africa. A first rideshare will probably go to SSO, which is fine for a demo but not for service. Mixing the two in one constellation leaves long gaps.
-- **For continuous narrowband, 80–150 is right** at 10°. At 20°, the top of the range is needed.
+- **For continuous narrowband, 80–150 is right.** It needs the top of the range at a 22° mask.
 
-*Simplified model: circular orbits, no J2 precession. Firm up with Orekit, then OpenSN, before external use.*
+#### Link budget check
+
+`forgestar/linkbudget.py` uses illustrative 6U–12U parameters. Replace them with datasheet values.
+
+| Link | Closes (3 dB margin) from | Implication |
+|---|---|---|
+| **NB-IoT uplink** (23 dBm device → 14 dBi sat patch) | ~22° elevation | Sets the coverage mask above |
+| **NB-IoT downlink** (2 W into 14 dBi, ±30° beam) | ~37° elevation | **The payload design driver.** Devices need the downlink to attach. Fix it with a shaped (isoflux) or steerable antenna, more RF power, or a narrower downlink carrier. Budget RF engineering for this |
+| **AIS receive** (VHF monopole) | horizon | AIS is limited by message collisions, not link budget |
+| **Feeder downlink** (X-band → 3.7 m SA dish) | ~4° | Gateway passes are long and the link closes easily |
+
+*Simplified model: circular orbits with J2, no drag or full gravity field. Firm up with Orekit, then OpenSN, before external use.*
 
 > **Key takeaway:** a 24–48 satellite constellation gives the whole continent useful IoT and maritime data on average, which is why the Africa-wide pitch works early. Tight worst-case revisit needs ~48 (SA) to ~80 (Africa) satellites. Real-time continuous coverage needs ~80–150 (Iridium-class).
 
@@ -276,6 +289,10 @@ Gross figures. Revenue, grants and prepayments reduce the equity need to reach S
 | **Gross capital to Stage 3** | $51–105M | ~$32–49M (high to low case) | The strategy's range is conservative. Keep it as the budget, since it includes buffers the model doesn't |
 | **Stage 0 spend** | $1–3M | ~$0.7M lean | The two numbers describe different plans. Lean bootstrap ≈ $0.5–1M, funded Stage 0 ≈ $1–3M |
 | **Cash low point** | | Year 2 | Low case runs short by ~$0.9M in year 2. Close the seed round before the hosted payload is paid for |
+
+**Monthly cash.** Even the base case goes about $0.5M negative for two months at the start of year 2. That's when hosted-payload and first-satellite payments come in before the seed money lands. **Close the seed round by the end of year 1**, or phase the payload deposits. The low case needs a larger seed round, or an earlier Series A.
+
+**Ownership.** The cap table (`model/assumptions.yaml` → `ownership`) keeps HDG ownership above 50% through Series B, as long as about a quarter to a third of each round comes from HDG-qualifying investors (DFIs, BEE funds) and half the ESOP goes to HDG employees. If the rounds come only from foreign VCs, the ratio falls fast. Plan an HDG anchor investor in every round, or a broad-based trust. *Founder HDG flags are placeholders. Confirm each holder's status and the current rule with counsel.*
 
 The model's biggest sensitivity is **IoT device adoption**. Revenue from 330k devices at about $3 per month only comes if a mobile operator or a big mining or logistics customer signs. A 40% revenue shortfall still reaches Stage 3, but only with the Series B on time.
 

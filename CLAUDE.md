@@ -8,9 +8,11 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `docs/strategy.md`: the full strategy (business model, stack, stages, capital, valuation, risks). Edit this first; it's the canonical text.
 - `scripts/build_pdf.py`: builds the FORGE-style PDF into `output/FORGE_STAR_Strategy.pdf` (ReportLab with DejaVu fonts). Run `python3 scripts/build_pdf.py`.
   It renders `docs/strategy.md` directly. Keep to the markdown subset documented at the top of its parser. Don't hard-code content in the script.
-- `sim/coverage_sim.py`: coverage and revisit simulation → `sim/results/`. `MIN_ELEV_DEG=10` sets the elevation mask.
-- `model/financial_model.py` + `model/assumptions.yaml`: Stages 0–3 model → `model/results/` (CSV, xlsx, summary with consistency checks).
-- `ground/docker-compose.yml`: Stage 0 platform (TimescaleDB, Kafka, ingest, simulator; `--profile full` adds ThingsBoard; `--profile radio` adds SatNOGS).
+- `forgestar/`: shared Python package: `orbits.py` (circular orbits with J2, passes), `linkbudget.py` (per-elevation margins), `logic.py` (store-and-forward core).
+- `sim/coverage_sim.py`: coverage, revisit and gateway passes → `sim/results/` (plus `link_budget.md`). The mask comes from the link budget; `MIN_ELEV_DEG` overrides it.
+- `model/financial_model.py` + `model/assumptions.yaml`: Stages 0–3 model → `model/results/` (CSV, xlsx with monthly cash and ownership sheets, summary with consistency checks including the 30% HDG rule).
+- `ground/docker-compose.yml`: Stage 0 platform (TimescaleDB, Kafka, ingest, `sandf` simulated satellites, device simulator; `--profile full` adds ThingsBoard; `--profile radio` adds SatNOGS). `ground/thingsboard/provision.py` creates the devices and dashboard.
+- `tests/`: pytest suite. `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
 - `docs/ntn-testbed-plan.md`: NB-IoT NTN lab plan.
 - `research/`: original inputs (the Exosat analysis, the open-source stack map, the first FORGE STAR plan, the v1 strategy summary). Read-only reference.
 
@@ -37,7 +39,8 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Coverage of the path to full launch (24–48 sats): open source + heypcb.ai covers **~28%**. With Claude Code assist it reaches **~43%**.
 - Bootstrapping covers about 10% of the work and about 1% of the capital to full launch, but ~80–100% of a hosted-payload first launch.
 - Satellites needed for frequent IoT (20–40 min): SA 16–24, SADC 24–36, Africa 30–48 **on average**. Simulation shows that a worst-case gap under ~1 h needs ~36–48 (SA) and ~80 (Africa) at a 10° mask. Continuous narrowband: 80–150 for Africa.
-- Financial model base case: Stage 3 (36 sats, yr 6) revenue ~$37M, equity ~$50M, gross need ~$38M. Cash is tightest in year 2.
+- Financial model base case: Stage 3 (36 sats, yr 6) revenue ~$37M, equity ~$50M, gross need ~$38M. Monthly cash dips ~$0.5M negative at the start of year 2: close the seed round by the end of year 1. HDG share stays >50% only if each round has HDG-qualifying investors.
+- Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.
 
 ## Open-source stack
 - **Flight:** F´ (primary), cFS (alternative), libcsp, Zephyr/FreeRTOS
@@ -61,12 +64,12 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 - **Autonomy/robotics:** telemetry
 
 ## Good next engineering tasks for Claude Code
-Done (Nov 2026): first coverage simulation, Stage 0 docker-compose, NTN test-bed plan, financial model, PDF rendered from markdown.
-1. Upgrade the coverage simulation to Orekit (J2, drag) and model the link budget per pass.
-2. Store-and-forward buffer service in `ground/` (simulated passes from `sim/`), feeding `latency_hourly`.
-3. ThingsBoard provisioning script and a customer dashboard (mining pumps, vessels).
-4. Add a cap-table/ownership sheet (30% rule) and a monthly cash view to the model.
-5. CI: run the sim, the model and the PDF build on each push.
+Done (Nov 2026): coverage sim with J2 and link budget, store-and-forward service, ThingsBoard provisioning + dashboard, ownership and monthly cash in the model, CI, PDF rendered from markdown.
+1. Run ThingsBoard for real (`--profile full`) and check the dashboard renders. Docker Hub rate-limited the image in the build session, so it was only tested against a fake API.
+2. Payload antenna trade study: isoflux vs patch vs small phased array, to close the NB-IoT downlink at 20–25°.
+3. Orekit cross-check of `forgestar/orbits.py` (drag, full gravity) and an OpenSN network emulation.
+4. Gateway downlink handler for real passes: SatNOGS observation → decoder → Kafka `iot.uplink` (replaces `sandf` in production).
+5. Regulatory tracker (ICASA/ITU filing milestones, spectrum counsel actions) and a grant pipeline tracker.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

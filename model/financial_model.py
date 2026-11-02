@@ -80,10 +80,58 @@ def build(a: dict, sc: dict) -> list[dict]:
             "cogs": cogs, "gross_margin_pct": (revenue - cogs) / revenue * 100 if revenue else 0,
             "opex_team": team, "opex_other": opex - team, "opex": opex, "ebitda": ebitda,
             "capex_satellites": sat_capex + hosted, "capex_ground": ground_capex, "capex": capex,
-            "prepayment_in": prepay_in, "funding_in": funding, "equity_in": equity,
+            "prepayment_in": prepay_in, "prepayment_released": release, "funding_in": funding, "equity_in": equity,
             "grants_in": f["grants"][i], "cash_end": cash,
         })
     return rows
+
+
+FUND_KEYS = ("founder_and_bootstrap", "grants", "angel_seed", "series_a", "series_b", "debt_or_dfi")
+
+
+def monthly(a: dict, rows: list[dict]) -> list[dict]:
+    """Monthly cash: operating flows spread evenly, capex front-loaded, funding in its month."""
+    fm = a.get("funding_month", {}); front = a.get("capex_front_load", 0.5)
+    out, cash = [], 0.0
+    for i, r in enumerate(rows):
+        op_year = r["ebitda"]
+        prepay_net = r["prepayment_in"] - r["prepayment_released"]  # cash received ahead of revenue
+        for mth in range(1, 13):
+            capex = r["capex"] * (front / 6 if mth <= 6 else (1 - front) / 6)
+            fund = sum(a["funding"][k][i] for k in FUND_KEYS if fm.get(k, 1) == mth)
+            prepay = prepay_net / 12
+            cash += op_year / 12 - capex + fund + prepay
+            out.append({"year": r["year"], "month": mth, "operating": op_year / 12, "capex": capex,
+                        "funding": fund + prepay, "cash_end": cash})
+    return out
+
+
+def cap_table(a: dict) -> list[dict]:
+    """Ownership after each round, and the HDG (historically disadvantaged group) share."""
+    o = a["ownership"]
+    holders = [dict(name=f["name"], shares=float(f["shares"]), hdg=1.0 if f.get("hdg") else 0.0,
+                    pool=bool(f.get("pool"))) for f in o["founders"]]
+    def snapshot(label):
+        tot = sum(h["shares"] for h in holders)
+        hdg = sum(h["shares"] * (o["esop_hdg_share"] if h["pool"] else h["hdg"]) for h in holders)
+        return {"after": label, "total_shares": tot, "hdg_pct": 100 * hdg / tot,
+                "holders": {h["name"]: 100 * h["shares"] / tot for h in holders}}
+    snaps = [snapshot("Founding")]
+    for rd in o["rounds"]:
+        tot = sum(h["shares"] for h in holders)
+        price = rd["pre_money"] / tot
+        new = rd["raise"] / price
+        holders.append(dict(name=rd["name"] + " investors", shares=new, hdg=rd["investor_hdg_share"], pool=False))
+        if rd.get("esop_topup_pct"):
+            post = sum(h["shares"] for h in holders)
+            pool = next(h for h in holders if h["pool"])
+            pool["shares"] += post * rd["esop_topup_pct"] / 100 / (1 - rd["esop_topup_pct"] / 100)
+        trust = (o.get("hdg_trust_issue_pct") or {}).get(rd["name"])
+        if trust:
+            post = sum(h["shares"] for h in holders)
+            holders.append(dict(name="HDG trust", shares=post * trust / 100 / (1 - trust / 100), hdg=1.0, pool=False))
+        snaps.append(snapshot(rd["name"]) | {"price_per_share": price, "post_money": rd["pre_money"] + rd["raise"]})
+    return snaps
 
 
 def m(x):  # $ millions
@@ -134,7 +182,31 @@ def main():
          1e6 <= b[0]["capex"] + b[0]["opex"] + b[0]["cogs"] <= 3e6),
         ("Never runs out of cash (base)", "cash ≥ 0", f"min ${m(min(r['cash_end'] for r in b))}M", min(r["cash_end"] for r in b) >= 0),
     ]
-    L += ["## Consistency checks vs docs/strategy.md (base case)", "",
+    # monthly cash and ownership
+    mon = {name: monthly(a, rows) for name, rows in results.items()}
+    caps = cap_table(a)
+    hdg_min = a["ownership"]["hdg_minimum_pct"]
+    L += ["## Monthly cash (low point and runway)", "", "| Scenario | Lowest month-end cash | When | Months below zero |", "|---|---|---|---|"]
+    for name, ms in mon.items():
+        lo = min(ms, key=lambda x: x["cash_end"])
+        neg = sum(1 for x in ms if x["cash_end"] < 0)
+        L.append(f"| {name} | ${m(lo['cash_end'])}M | year {lo['year']}, month {lo['month']} | {neg}{'  ⚠️' if neg else ''} |")
+    L += ["", "## Ownership and the 30% HDG rule", "",
+          f"HDG = historically disadvantaged group. ICASA minimum {hdg_min:.0f}% (re-verify with counsel). "
+          f"Counts founder HDG holdings, {a['ownership']['esop_hdg_share']*100:.0f}% of the ESOP pool and each round's HDG investor share.", "",
+          "| After | Post-money | HDG share | OK | Largest holders |", "|---|---|---|---|---|"]
+    for c in caps:
+        top = ", ".join(f"{k} {v:.0f}%" for k, v in sorted(c["holders"].items(), key=lambda x: -x[1])[:3])
+        L.append(f"| {c['after']} | {('$' + m(c['post_money']) + 'M') if 'post_money' in c else '—'} | {c['hdg_pct']:.1f}% | "
+                 f"{'✅' if c['hdg_pct'] >= hdg_min else '❌'} | {top} |")
+    worst = min(caps, key=lambda c: c["hdg_pct"])
+    if worst["hdg_pct"] < hdg_min:
+        L += ["", f"⚠️ HDG share falls to {worst['hdg_pct']:.1f}% after {worst['after']}. Options: HDG anchor investors (IDC, NEF, PIC), "
+              "a broad-based HDG trust issued at that round (`hdg_trust_issue_pct`), or an approved equity-equivalent programme."]
+    checks.append(("HDG ownership ≥30% after every round", "≥30%", f"min {worst['hdg_pct']:.1f}% ({worst['after']})", worst["hdg_pct"] >= hdg_min))
+    checks.append(("No month below zero cash (base)", "cash ≥ 0", f"min ${m(min(x['cash_end'] for x in mon['base']))}M",
+                   min(x["cash_end"] for x in mon["base"]) >= 0))
+    L += ["", "## Consistency checks vs docs/strategy.md (base case)", "",
           "| Claim | Strategy says | Model gives | OK |", "|---|---|---|---|"]
     L += [f"| {c} | {s} | {mm} | {'✅' if ok else '❌'} |" for c, s, mm, ok in checks]
     (OUT / "summary.md").write_text("\n".join(L) + "\n")
@@ -154,6 +226,18 @@ def main():
             ws.column_dimensions["A"].width = 22
             for row in ws.iter_rows(min_row=2, min_col=2):
                 for cell in row: cell.number_format = "#,##0"
+        ws = wb.create_sheet("monthly_cash")
+        ws.append(["year", "month"] + [f"{n}_cash_end" for n in mon])
+        for i in range(len(mon["base"])):
+            ws.append([mon["base"][i]["year"], mon["base"][i]["month"]] + [round(mon[n][i]["cash_end"]) for n in mon])
+        ws = wb.create_sheet("ownership")
+        names = list(caps[-1]["holders"].keys())
+        ws.append(["after", "post_money", "hdg_pct"] + names)
+        for c in caps:
+            ws.append([c["after"], c.get("post_money", 0), round(c["hdg_pct"], 2)] + [round(c["holders"].get(n, 0), 2) for n in names])
+        for sh in ("monthly_cash", "ownership"):
+            for cell in wb[sh][1]:
+                cell.font = Font(bold=True, color="FFFFFF"); cell.fill = PatternFill("solid", fgColor="1B1E24")
         wb.save(OUT / "FORGE_STAR_Model.xlsx")
     except ImportError:
         pass

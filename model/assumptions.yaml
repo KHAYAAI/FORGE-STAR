@@ -64,3 +64,33 @@ funding:
   series_a:          [0, 0, 22000000, 0, 0, 0]   # $15–30M at Stage 2
   series_b:          [0, 0, 0, 0, 25000000, 0]
   debt_or_dfi:       [0, 0, 0, 0, 0, 0]
+
+# Month (1–12) in each year when that year's funding lands. Used by the monthly cash view.
+# Operating flows and capex are spread evenly across the year; capex can be front-loaded.
+funding_month:
+  founder_and_bootstrap: 1
+  grants: 4
+  angel_seed: 3
+  series_a: 6
+  series_b: 4
+  debt_or_dfi: 6
+capex_front_load: 0.6   # share of a year's capex paid in the first half (launch deposits, long-lead parts)
+
+# Ownership and ICASA's 30% historically-disadvantaged-group (HDG) equity rule.
+# Re-verify the current rule and any equity-equivalent programme with counsel before relying on this.
+ownership:
+  hdg_minimum_pct: 30.0
+  founders:
+    # hdg flags are placeholders: set them from each holder's actual status, confirmed by counsel
+    - {name: "Founder", shares: 7000000, hdg: true}
+    - {name: "Technical co-founder", shares: 2000000, hdg: false}
+    - {name: "ESOP pool", shares: 1000000, hdg: false, pool: true}
+  # HDG share of each new investor's stake: DFIs/BEE funds (e.g. IDC, NEF, PIC) count; most VCs do not.
+  rounds:
+    - {name: "Angel/seed", year: 2, raise: 2500000, pre_money: 10000000, investor_hdg_share: 0.30, esop_topup_pct: 0}
+    - {name: "Series A", year: 3, raise: 22000000, pre_money: 60000000, investor_hdg_share: 0.25, esop_topup_pct: 5}
+    - {name: "Series B", year: 5, raise: 25000000, pre_money: 220000000, investor_hdg_share: 0.30, esop_topup_pct: 3}
+  # ESOP: share of the pool granted to HDG employees (counts toward the rule once vested/held in an employee trust)
+  esop_hdg_share: 0.5
+  # Optional HDG trust / broad-based scheme issued at a round to restore the ratio (shares as % post-round)
+  hdg_trust_issue_pct: {}
