@@ -32,8 +32,10 @@ class Fake(BaseHTTPRequestHandler):
         if self.path.startswith("/api/device/"):
             return self._send(200, {"credentialsId": "tok-" + self.path.split("/")[3]})
         if self.path.startswith("/api/widgetType"):
-            return self._send(200, {"fqn": self.path.split("fqn=")[1], "descriptor": {"type": "latest", "defaultConfig": "{}"}}) \
-                if "entities_table" in self.path or "openstreetmap" in self.path else self._send(404)
+            fqn = self.path.split("fqn=")[1].replace("system.", "")
+            # like ThingsBoard 3.8: known types return their fqn (no "system." prefix); unknown -> 200 with {}
+            known = {"cards.entities_table", "maps_v2.openstreetmap"}
+            return self._send(200, {"fqn": fqn, "descriptor": {"type": "latest", "defaultConfig": "{}"}} if fqn in known else {})
         if self.path.startswith("/api/tenant/dashboards"): return self._send(200, {"data": []})
         self._send(404)
 
@@ -49,4 +51,7 @@ def test_provision(tmp_path, monkeypatch):
     assert len(tokens) == 10 and tokens["pump-0000"].startswith("tok-")
     d = STATE["dashboards"][-1]
     assert d["title"] == "FORGE STAR — Operations"
-    assert set(d["configuration"]["widgets"]) == {"w_table", "w_map"}  # chart type missing on the fake -> skipped
+    w = d["configuration"]["widgets"]
+    assert set(w) == {"w_table", "w_map"}  # chart type unknown on the fake -> skipped, not referenced
+    assert w["w_table"]["typeFullFqn"] == "system.cards.entities_table"
+    assert w["w_map"]["typeFullFqn"] == "system.maps_v2.openstreetmap"

@@ -23,7 +23,7 @@ jobs:
       - name: Financial model
         run: python model/financial_model.py > /dev/null
       - name: Antenna trade, SGP4 check, readiness
-        run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python readiness/tracker.py > /dev/null
+        run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python sim/latency_sim.py > /dev/null && python readiness/tracker.py > /dev/null
       - name: Verification register
         run: python scripts/verify_register.py > /dev/null
       - name: Strategy PDF
@@ -88,3 +88,13 @@ jobs:
         run: |
           fprime-util generate --ut
           fprime-util check -j4
+      - name: Payload deployment (native) runs and its downlink decodes on the ground
+        run: |
+          pip install numpy pyyaml
+          (cd flight/fprime && fprime-util generate && fprime-util build -j4)
+          python flight/run_payload.py
+      - name: Payload deployment on 64-bit ARM (cross-compiled, run under QEMU)
+        run: |
+          sudo apt-get update && sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu qemu-user
+          (cd flight/fprime && fprime-util generate aarch64-linux && fprime-util build aarch64-linux -j4)
+          python flight/run_payload.py --arch aarch64 --seconds 8

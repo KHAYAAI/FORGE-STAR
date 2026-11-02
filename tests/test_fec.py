@@ -71,3 +71,28 @@ def test_back_to_back_blocks():
     a, b = frame(3), frame(60)
     frames, _ = fec.decode_stream(fec.encode_block(a) + fec.encode_block(b))
     assert frames == [a, b]
+
+
+def test_dual_basis_table_matches_libfec():
+    # first entries of Taltab in Phil Karn's libfec (ccsds_tab.c)
+    assert fec.TAL[:12] == [0x00, 0x7B, 0xAF, 0xD4, 0x99, 0xE2, 0x36, 0x4D, 0xFA, 0x81, 0x55, 0x2E]
+    assert all(fec.TAL1[fec.TAL[i]] == i for i in range(256))
+
+
+def test_dual_basis_codeword_is_valid_in_conventional_domain():
+    d = bytes(random.Random(7).randrange(256) for _ in range(223))
+    cw = fec.rs_encode_ccsds(d, "dual")
+    assert cw[:223] == d                                    # data sent unchanged
+    conv = [fec.TAL1[b] for b in cw]
+    assert all(fec._poly_eval(conv, fec.EXP[(11 * j) % 255]) == 0 for j in range(112, 144))
+
+
+def test_dual_and_conventional_both_round_trip_with_errors():
+    raw = frame(20)
+    for basis in ("dual", "conventional"):
+        blk = bytearray(fec.encode_block(raw, basis)); rnd = random.Random(8)
+        for p in rnd.sample(range(4, len(blk)), 12): blk[p] ^= rnd.randrange(1, 256)
+        frames, st = fec.decode_stream(bytes(blk), basis)
+        assert frames == [raw], basis
+    # a block in one basis must not decode as the other
+    assert fec.decode_stream(fec.encode_block(raw, "dual"), "conventional")[0] == []

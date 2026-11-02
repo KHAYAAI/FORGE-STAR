@@ -237,6 +237,24 @@ What changes:
 
 *Simplified model: circular orbits with J2. Checked against SGP4 (`sim/sgp4_crosscheck.py`): orbit planes agree to within 3 km over 3 days, and the remaining difference is a timing offset equal to 1–3 km of altitude. Firm up with Orekit, then OpenSN, before external use. All antenna figures are illustrative.*
 
+#### Delivery time: satellites vs gateways
+
+`sim/latency_sim.py` follows each message end to end. It waits for a satellite overhead, rides on board, then lands at the first gateway pass. Devices re-send on each pass until the ground acknowledges.
+
+| Setup (95% of messages delivered within…) | Johannesburg | Maputo corridor | Lusaka | Dar es Salaam | Nairobi | Lagos |
+|---|---|---|---|---|---|---|
+| **24 sats, 22° mask, SA gateways only** | 1.6 h | 81 min | 1.8 h | 3.4 h | 5.8 h | 4.3 h |
+| **24 sats, 16° mask, 4 gateways** | 77 min | 57 min | 74 min | 2.7 h | 3.7 h | 3.8 h |
+| **36 sats, 16° mask, 4 gateways** | 44 min | 71 min | 12 min | 44 min | 1.8 h | 1.9 h |
+| **48 sats, 16° mask, 4 gateways** | 42 min | 53 min | 9 min | 50 min | 1.9 h | 1.8 h |
+
+Gateways: Hartebeesthoek, Cape Town, Walvis Bay, Mauritius. A 16° mask needs the shaped (isoflux) antenna.
+
+- **Gateways are the cheap lever** for sites far from SA. They can be leased passes or partner stations relaying data to the SA platform, so data still lands in SA.
+- **The 60-minute SLA is reachable across SADC** with about 36–48 satellites, the isoflux antenna and 4 gateways.
+- **Equatorial sites (Nairobi, Lagos) stay around 2 hours.** They need a low-inclination plane or equatorial gateways before an SLA is offered there.
+- **Devices must re-send until acknowledged.** Handing each message to a single satellite can make waits worse, because that satellite may be heading away from every gateway.
+
 > **Key takeaway:** a 24–48 satellite constellation gives the whole continent useful IoT and maritime data on average, which is why the Africa-wide pitch works early. Tight worst-case revisit needs ~48 (SA) to ~80 (Africa) satellites. Real-time continuous coverage needs ~80–150 (Iridium-class).
 
 ---
@@ -337,6 +355,8 @@ Gross figures. Revenue, grants and prepayments reduce the equity need to reach S
 
 **Ownership.** The cap table (`model/assumptions.yaml` → `ownership`) keeps HDG ownership above 50% through Series B, as long as about a quarter to a third of each round comes from HDG-qualifying investors (DFIs, BEE funds) and half the ESOP goes to HDG employees. If the rounds come only from foreign VCs, the ratio falls fast. Plan an HDG anchor investor in every round, or a broad-based trust. *Founder HDG flags are placeholders. Confirm each holder's status and the current rule with counsel.*
 
+**IoT price pressure.** New entrants now price at about $1 per device per month (Myriota from $0.99; Sateliot targeting about €1). That's below our $2–5 assumption. At about $1, year-6 revenue falls from about $37.5M to about $31.6M, which is still in range. The reason: IoT is only about a quarter of Stage 3 revenue, and the **SA government sovereign-capacity contract is the line the plan really depends on**. Price IoT on sovereignty and local support, not on undercutting, and win the government anchor early.
+
 The model's biggest sensitivity is **IoT device adoption**. Revenue from 330k devices at about $3 per month only comes if a mobile operator or a big mining or logistics customer signs. A 40% revenue shortfall still reaches Stage 3, but only with the Series B on time.
 
 #### Bootstrapping: revenue first, payload in orbit second, equity third
@@ -366,7 +386,7 @@ Non-dilutive sources to target: TIA, DSI, SANSA partnerships (facilities, ground
 
 | Competitor | Scale (late 2026) | Sovereignty posture | FORGE STAR's angle |
 |---|---|---|---|
-| **Starlink** | ~10M subscribers, ~$11B connectivity revenue, ~90% of active LEO internet satellites; ~300k African subscribers | US-controlled; licence-blocked in SA by ownership rules | Do not compete on broadband; win on sovereignty, compliance and local ownership |
+| **Starlink** | 10.3M paid subscribers (Mar 2026, S-1), ~12M by mid-2026; ~10,800 working satellites; ~300k African subscribers (unverified) | US-controlled; licence-blocked in SA by ownership rules | Do not compete on broadband; win on sovereignty, compliance and local ownership |
 | **Guowang / Qianfan** | A few hundred satellites combined, far behind targets | Chinese state-aligned | Displace in the non-aligned segment |
 | **Eutelsat / OneWeb, IRIS²** | OneWeb ~650 satellites, enterprise-only in SA; IRIS² services from ~2030 | European sovereign, not African | Leaves African sovereign and mass IoT open |
 | **Amazon Leo** | Hundreds of satellites, enterprise beta, preparing SA entry | US / AWS-adjacent | Future competitor; not serving African sovereign demand yet |

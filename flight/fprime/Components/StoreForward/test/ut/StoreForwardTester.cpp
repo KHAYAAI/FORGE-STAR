@@ -127,4 +127,19 @@ void StoreForwardTester::testClearKeepsSequenceMoving() {
     ASSERT_EQ(seqA + 1, seqB);
 }
 
+void StoreForwardTester::testPassPredictorInput() {
+    for (U32 i = 0; i < 10; i++) this->sendDevice(i);
+    this->invoke_to_passIn(0, true);
+    this->component.doDispatch();
+    ASSERT_EVENTS_PassStarted(0, 10);
+    this->tick(3);
+    ASSERT_EQ(1u, this->m_blocks.size());   // 10 small messages fit one link block
+    this->invoke_to_passIn(0, false);
+    this->component.doDispatch();
+    ASSERT_EVENTS_PassEnded(0, 1, 10);
+    for (U32 i = 0; i < 3; i++) this->sendDevice(i);
+    this->tick(3);
+    ASSERT_EQ(1u, this->m_blocks.size());   // pass over: nothing more sent
+}
+
 }  // namespace ForgeSat

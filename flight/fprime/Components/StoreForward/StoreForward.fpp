@@ -9,6 +9,9 @@ module ForgeSat {
     payload: string size 200 @< compact JSON
   )
 
+  @ Gateway pass state from the onboard pass predictor (true = gateway in view)
+  port PassState(inView: bool)
+
   @ Store-and-forward payload: buffers device messages on board and, during a
   @ gateway pass, sends them down as forgestar frames v1 wrapped in RS(255,223) link blocks.
   @ The core is flight/libforge (C99), shared byte-for-byte with the Python ground segment.
@@ -22,6 +25,9 @@ module ForgeSat {
 
     @ Rate group tick: while a pass is active, send one link block per tick
     async input port schedIn: Svc.Sched
+
+    @ Pass state from the onboard pass predictor (same effect as SF_PASS_START / SF_PASS_END)
+    async input port passIn: PassState
 
     @ Start a downlink pass (gateway in view)
     async command SF_PASS_START opcode 0x00

@@ -52,16 +52,32 @@ claims:
   - id: M1
     area: market
     claim: "Satellite IoT pricing: new LEO entrants ~$1–€8 per device per month; legacy $40–70."
-    used_in: [docs/strategy.md §04]
-    status: unverified
-    sources: []
+    used_in: [docs/strategy.md §04, model/assumptions.yaml revenue.iot.arpu_month]
+    status: web-checked
+    finding: >-
+      Entrants now price at the bottom of the range: Myriota hybrid plans from US$0.99/device/month (2026),
+      Sateliot targets ~€1. NTN airtime is often billed per KB (~$0.01–0.05/KB). The model's $4→$2.8 ARPU is high;
+      at ~$1 year-6 revenue falls from ~$37.5M to ~$31.6M (still in range, because sovereign capacity dominates).
+      Legacy $40–70 not re-checked.
+    sources:
+      - https://itbrief.com.au/story/myriota-launches-hybrid-satellite-cellular-tracking
+      - https://myriota.com/debunk-satellite-iot-cost-myth/
+      - https://m.iotone.com/podcast/ep-183-making-5g-nb-iot-connectivity-affordable-by-satellite-jaume-sanpera-ceo-co-founder-of-sateliot/p233
+      - https://hubble.com/community/comparisons/is-3gpp-ntn-worth-the-cost-breaking-down-module-premiums-lte-fees-and-satellite-surcharges/
     confirm_by: "Sales lead (competitor quotes)"
   - id: M2
     area: market
     claim: "Starlink ~10M subscribers, ~$11B connectivity revenue; OneWeb ~650 satellites; Guowang/Qianfan a few hundred."
     used_in: [docs/strategy.md §10]
-    status: unverified
-    sources: []
+    status: web-checked
+    finding: >-
+      Starlink 10.3M paid subscribers at 31 Mar 2026 (SpaceX S-1), ~12M reported mid-2026; ~10,800 working satellites
+      (McDowell, Jul 2026). 2025 revenue ~$11.4B per a secondary source (check the S-1). OneWeb ~654 operational (Apr 2026).
+      Qianfan ~218 in orbit (undated); no reliable Guowang 2026 figure found.
+    sources:
+      - https://driveteslacanada.ca/news/starlink-12-million-subscribers-price-hikes/
+      - https://kalkine.com/corporate-actions/ipo/starlink-subscribers-hit-10-million-why-spacexs-satellite-internet-business-is-still-chasing-profitability
+      - https://www.earthsims.com/starlink/starlink-statistics/
     confirm_by: "Founder (re-check before each external deck)"
   - id: C1
     area: commercial

@@ -57,20 +57,39 @@ void StoreForward::schedIn_handler(FwIndexType portNum, U32 context) {
     this->writeTelemetry();
 }
 
-void StoreForward::SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
+void StoreForward::startPass() {
+    if (this->m_passActive) {
+        return;
+    }
     this->m_passActive = true;
     this->m_passBlocks = 0;
     this->m_passRecords = 0;
     this->log_ACTIVITY_HI_PassStarted(this->m_store.count);
-    this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
 }
 
-void StoreForward::SF_PASS_END_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
+void StoreForward::endPass() {
     if (this->m_passActive) {
         this->log_ACTIVITY_HI_PassEnded(this->m_passBlocks, this->m_passRecords);
     }
     this->m_passActive = false;
     this->log_WARNING_HI_BufferFull_ThrottleClear();
+}
+
+void StoreForward::passIn_handler(FwIndexType portNum, bool inView) {
+    if (inView) {
+        this->startPass();
+    } else {
+        this->endPass();
+    }
+}
+
+void StoreForward::SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
+    this->startPass();
+    this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
+}
+
+void StoreForward::SF_PASS_END_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) {
+    this->endPass();
     this->cmdResponse_out(opCode, cmdSeq, Fw::CmdResponse::OK);
 }
 

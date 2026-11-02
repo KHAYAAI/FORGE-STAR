@@ -9,6 +9,8 @@ TEST(Nominal, NoDownlinkOutsidePass) { ForgeSat::StoreForwardTester t; t.testNoD
 TEST(OffNominal, BufferFullDropsAndWarns) { ForgeSat::StoreForwardTester t; t.testBufferFullDropsAndWarns(); }
 TEST(OffNominal, ClearKeepsSequenceMoving) { ForgeSat::StoreForwardTester t; t.testClearKeepsSequenceMoving(); }
 
+TEST(Nominal, PassPredictorInput) { ForgeSat::StoreForwardTester t; t.testPassPredictorInput(); }
+
 int main(int argc, char** argv) {
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();

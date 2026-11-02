@@ -73,16 +73,23 @@ def ensure_device(tb: TB, name: str, kind: str, customer: str) -> str:
 
 # Candidate widget type FQNs, newest naming first. ThingsBoard renamed widgets between releases.
 WIDGETS = {
-    "table": ["entities_table", "cards.entities_table"],
-    "map": ["openstreetmap", "maps_v2.openstreetmap", "map"],
-    "chart": ["time_series_chart", "charts.basic_timeseries", "charts.timeseries"],
+    "table": ["cards.entities_table", "entities_table"],             # 3.8: cards.entities_table
+    "map": ["maps_v2.openstreetmap", "openstreetmap"],                 # 3.8: maps_v2.openstreetmap
+    "chart": ["time_series_chart", "charts.basic_timeseries"],        # 3.8: time_series_chart
 }
 
 
+TABLE_SETTINGS = {"entitiesTitle": "Devices", "enableSearch": True, "displayPagination": True, "defaultPageSize": 10,
+                  "displayEntityName": True, "entityNameColumnTitle": "Device", "displayEntityLabel": False,
+                  "displayEntityType": False, "defaultSortOrder": "entityName"}
+
+
 def find_widget(tb: TB, candidates):
+    """First candidate that exists. ThingsBoard answers unknown FQNs with 200 and an empty body,
+    so a widget only counts as found when the reply carries its fqn."""
     for fqn in candidates:
         w = tb.call("GET", f"/api/widgetType?fqn={urllib.request.quote('system.' + fqn)}", ok404=True)
-        if w:
+        if w and w.get("fqn"):
             return w
     return None
 
@@ -108,20 +115,22 @@ def dashboard(tb: TB, widgets: dict) -> dict:
             d[0]["dataKeys"].append({"name": k, "type": "timeseries" if t in ("latest", "timeseries") else "attribute",
                                      "label": label, "settings": {}})
         desc = wt.get("descriptor", {})
-        wmap[wid] = {"id": wid, "typeFullFqn": wt.get("fqn") or "system." + kind, "type": desc.get("type", "latest"),
+        wmap[wid] = {"id": wid, "typeFullFqn": "system." + wt["fqn"], "type": desc.get("type", "latest"),
                      "sizeX": sizes[kind][0], "sizeY": sizes[kind][1],
                      "config": {"title": {"table": "Devices", "map": "Where they are", "chart": "Latency"}[kind],
                                 "showTitle": True, "datasources": d,
                                 "timewindow": {"realtime": {"timewindowMs": 6 * 3600 * 1000}},
-                                "settings": json.loads(desc.get("defaultConfig", "{}")).get("settings", {})}}
+                                "settings": {**json.loads(desc.get("defaultConfig", "{}")).get("settings", {}),
+                                             **(TABLE_SETTINGS if kind == "table" else {})}}}
         layout[wid] = {"sizeX": sizes[kind][0], "sizeY": sizes[kind][1], "row": pos[kind][1], "col": pos[kind][0]}
     return {
         "title": "FORGE STAR — Operations",
         "configuration": {
             "description": "Stage 0 platform: devices, positions and store-and-forward latency.",
             "widgets": wmap,
-            "entityAliases": {alias: {"id": alias, "alias": "All devices",
-                                      "filter": {"type": "entityType", "entityType": "DEVICE", "resolveMultiple": True}}},
+            "entityAliases": {alias: {"id": alias, "alias": "FORGE STAR devices",
+                                      "filter": {"type": "deviceType", "deviceTypes": sorted({k for k, _ in KINDS}),
+                                                 "deviceNameFilter": "", "resolveMultiple": True}}},
             "states": {"default": {"name": "FORGE STAR", "root": True,
                                    "layouts": {"main": {"widgets": layout, "gridSettings": {"columns": 24}}}}},
             "timewindow": {"realtime": {"timewindowMs": 6 * 3600 * 1000}},

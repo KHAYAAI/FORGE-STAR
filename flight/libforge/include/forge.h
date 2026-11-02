@@ -44,6 +44,7 @@ size_t forge_frame_encode(uint8_t *out, size_t out_cap, uint16_t sat_id, uint32_
                           const forge_record_t *records, size_t count, int more_follow, size_t *used);
 
 /* ---- link layer ---- */
+/* RS(255,223), CCSDS parameters and CCSDS dual-basis symbols (interoperable with libfec encode_rs_ccsds). */
 void   forge_rs_encode(const uint8_t data[FORGE_RS_K], uint8_t parity[FORGE_RS_N - FORGE_RS_K]);
 void   forge_randomise(uint8_t *buf, size_t len);   /* CCSDS PN, restarts at 0 for each call */
 /* Wrap a frame into ASM + randomised RS codewords. Returns bytes written, 0 on error. */

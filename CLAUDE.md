@@ -13,11 +13,12 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `model/financial_model.py` + `model/assumptions.yaml`: Stages 0–3 model → `model/results/` (CSV, xlsx with monthly cash and ownership sheets, summary with consistency checks including the 30% HDG rule).
 - `ground/docker-compose.yml`: Stage 0 platform (TimescaleDB, Kafka, ingest, `sandf` simulated satellites, device simulator; `--profile full` adds ThingsBoard; `--profile radio` adds SatNOGS). `ground/thingsboard/provision.py` creates the devices and dashboard.
 - `forgestar/frames.py`: the store-and-forward downlink frame format (v1) shared by payload firmware and gateway. `ground/gateway/` decodes frames (Kafka `ground.frames`, a frames folder, or SatNOGS Network) into `iot.uplink`.
+- `sim/latency_sim.py`: end-to-end delivery time (satellite wait + gateway wait), constellations × gateway networks × mask; `POLICY=single|resend`.
 - `sim/antenna_trade.py`: payload antenna options vs usable elevation and service. `sim/sgp4_crosscheck.py`: validates `forgestar/orbits.py` against SGP4.
 - `readiness/readiness.yaml` + `readiness/tracker.py`: the outside work (ICASA/ITU, ownership, funding, lab, orbit, customers) with dependencies → `readiness/STATUS.md` (critical path, late items, Gantt, plan options). Update statuses there.
-- `forgestar/fec.py`: radio link layer (RS(255,223) CCSDS parameters, own encoder and decoder, CCSDS randomiser, ASM). Gateway decodes `.raw` captures and Kafka `link` blocks.
+- `forgestar/fec.py`: radio link layer: RS(255,223) with CCSDS parameters **in the CCSDS dual basis by default** (libfec-compatible), own encoder/decoder, CCSDS randomiser, ASM. `basis="conventional"` keeps the old form.
 - `flight/libforge/`: C99 flight core (frames, FEC encode, store-and-forward ring buffer), byte-identical to Python. Vectors: `flight/libforge/test/make_vectors.py`.
-- `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`) with the `StoreForward` component and its unit tests: `cd flight/fprime && fprime-util generate --ut && fprime-util check`.
+- `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`). Components: `StoreForward` (5 UTs) and `PayloadSim` (hardware stand-in: NB-IoT messages, pass schedule, downlink file). Deployment `Payload/` (standard F´ topology + both components). Build: `fprime-util generate && fprime-util build`; ARM: `fprime-util generate aarch64-linux && fprime-util build aarch64-linux`. Run and verify: `python3 flight/run_payload.py [--arch aarch64]` (QEMU for ARM). `FORGE_CYCLE_MS` speeds up the 1 Hz loop.
 - `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage. Keys: `docker compose exec api python app.py create-key "<customer>"`.
 - `forgestar/params/rf.yaml`: radio parameters with source/status. `docs/verification/register.yaml` → `scripts/verify_register.py` → `docs/verification/VERIFY.md`: everything still to confirm.
 - `hardware/`: in-house PCB pipeline (SKiDL → KiCad pcbnew placement → Freerouting → DRC → fab zip). Board 1: payload interface board (`hardware/boards/pib/pib.py`).
@@ -50,6 +51,8 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Satellites needed for frequent IoT (20–40 min): SA 16–24, SADC 24–36, Africa 30–48 **on average**. Simulation shows that a worst-case gap under ~1 h needs ~36–48 (SA) and ~80 (Africa) at a 10° mask. Continuous narrowband: 80–150 for Africa.
 - Financial model base case: Stage 3 (36 sats, yr 6) revenue ~$37M, equity ~$50M, gross need ~$38M. Monthly cash dips ~$0.5M negative at the start of year 2: close the seed round by the end of year 1. HDG share stays >50% only if each round has HDG-qualifying investors.
 - Schedule: with dependencies chained, Stage 2 lands ~61 months from start if run in sequence; ~43 months on the fast track (own demonstrator in parallel with the hosted payload, Series A on the hosted-payload result).
+- Delivery SLA (95% ≤ 60 min) across SADC needs ~36–48 sats + isoflux antenna (16° mask) + 4 gateways (SA ×2, Walvis Bay, Mauritius); equatorial sites stay ~2 h. Devices must re-send each pass until acked.
+- IoT pricing: entrants at ~$1/device/month; at that price year-6 revenue ~$31.6M (vs $37.5M). The sovereign contract is the real dependency.
 - Antenna: demo = patch + deeper NB-IoT repetition (mask ~26°); Stage 2 = shaped isoflux beam (mask 16–21°, needs ~25–40 W during passes).
 - Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.
 
@@ -75,12 +78,14 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 - **Autonomy/robotics:** telemetry
 
 ## Good next engineering tasks for Claude Code
-Done (Nov 2026): flight core in C + F´ component, RS/CCSDS link layer, customer API, verification register, in-house PCB pipeline (board 1 placed), plus everything listed earlier.
-1. Autoroute the payload interface board (needs Freerouting approved to run) and review the routed board by hand.
-2. F´ deployment topology (rate group, command dispatcher, BufferManager, radio driver) around `StoreForward`, then run it on a dev board.
-3. CCSDS dual-basis transform in `forgestar/fec.py` and `flight/libforge` for third-party ground stations.
-4. ThingsBoard real run (`--profile full`); Docker Hub rate-limited the image in build sessions.
-5. Replace `illustrative` values in `forgestar/params/rf.yaml` and `model/assumptions.yaml` as datasheets and quotes arrive; re-run `scripts/verify_register.py`.
+Done (Nov 2026): F´ deployment (native + aarch64 under QEMU), CCSDS dual basis, delivery-time sim, ThingsBoard live run, market checks, plus everything earlier.
+1. Autoroute the payload interface board (Freerouting needs approval to run here) and review by hand.
+2. Replace `PayloadSim` with real drivers: NB-IoT modem over UART, onboard pass predictor (port `forgestar/orbits.py` to C), X-band radio driver. Then run on a Raspberry Pi / STM32 dev board.
+3. Device firmware side of "re-send until acked": downlink ack frames in `forgestar/frames.py` + libforge.
+4. F´ ground: install fprime-gds on Python ≤3.12 and command the deployment over TCP.
+5. Low-inclination plane or equatorial gateway study for Nairobi/Lagos SLA.
+
+ThingsBoard: verified live (3.8.1): provisioning, telemetry forwarding and the operations dashboard work (`docs/img/thingsboard-operations.png`). Widget FQNs in 3.8: `cards.entities_table`, `maps_v2.openstreetmap`, `time_series_chart`.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

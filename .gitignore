@@ -12,3 +12,4 @@ hardware/build/
 *_sklib.py
 *.erc
 /*.log
+flight/fprime/build-artifacts/

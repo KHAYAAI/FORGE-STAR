@@ -50,6 +50,19 @@ size_t forge_frame_encode(uint8_t *out, size_t cap, uint16_t sat_id, uint32_t se
 static uint8_t gf_exp[512], gf_log[256], gpoly[NSYM + 1];
 static int gf_ready = 0;
 
+/* CCSDS dual basis (Berlekamp): same 8x8 matrix as libfec ccsds_tal.c.
+ * tal_conv_to_dual[c] gives the dual-basis byte for conventional symbol c; tal_dual_to_conv is its inverse. */
+static uint8_t tal_conv_to_dual[256], tal_dual_to_conv[256];
+static void tal_init(void) {
+    static const uint8_t rows[8] = {0x8D, 0xEF, 0xEC, 0x86, 0xFA, 0x99, 0xAF, 0x7B};
+    for (unsigned i = 0; i < 256; i++) {
+        uint8_t v = 0;
+        for (unsigned k = 0; k < 8; k++) if (i & (1u << k)) v ^= rows[7 - k];
+        tal_conv_to_dual[i] = v;
+        tal_dual_to_conv[v] = (uint8_t)i;
+    }
+}
+
 static uint8_t gmul(uint8_t a, uint8_t b) { return (a && b) ? gf_exp[gf_log[a] + gf_log[b]] : 0; }
 
 static void gf_init(void) {
@@ -66,6 +79,7 @@ static void gf_init(void) {
     }
     /* g[] is highest degree first; g[0] = 1 (monic). Matches GPOLY in forgestar/fec.py. */
     for (unsigned i = 0; i <= NSYM; i++) gpoly[i] = g[i];
+    tal_init();
     gf_ready = 1;
 }
 
@@ -73,10 +87,11 @@ void forge_rs_encode(const uint8_t data[FORGE_RS_K], uint8_t par[NSYM]) {
     if (!gf_ready) gf_init();
     memset(par, 0, NSYM);
     for (unsigned i = 0; i < FORGE_RS_K; i++) {
-        uint8_t fb = (uint8_t)(data[i] ^ par[0]);
+        uint8_t fb = (uint8_t)(tal_dual_to_conv[data[i]] ^ par[0]);   /* data are dual-basis symbols */
         memmove(par, par + 1, NSYM - 1); par[NSYM - 1] = 0;
         if (fb) for (unsigned k = 0; k < NSYM; k++) par[k] ^= gmul(fb, gpoly[k + 1]);
     }
+    for (unsigned k = 0; k < NSYM; k++) par[k] = tal_conv_to_dual[par[k]];  /* parity out in dual basis */
 }
 
 /* CCSDS pseudo-randomiser: h(x)=x^8+x^7+x^5+x^3+1, all-ones seed; output r0, feedback r0^r3^r5^r7 */

@@ -22,6 +22,9 @@ class StoreForward : public StoreForwardComponentBase {
     void deviceIn_handler(FwIndexType portNum, U32 shortId, U32 tCreated, I32 latE5, I32 lonE5,
                           const Fw::StringBase& payload) override;
     void schedIn_handler(FwIndexType portNum, U32 context) override;
+    void passIn_handler(FwIndexType portNum, bool inView) override;
+    void startPass();
+    void endPass();
     void SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;
     void SF_PASS_END_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;
     void SF_CLEAR_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;

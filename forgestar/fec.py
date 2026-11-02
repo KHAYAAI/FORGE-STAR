@@ -12,9 +12,11 @@ u16 frame length and u8 codeword count. The last codeword is zero-padded (virtua
 The pseudo-randomiser is the CCSDS sequence h(x) = x^8+x^7+x^5+x^3+1 (seed all ones),
 restarted after every ASM. It guarantees bit transitions for the receiver's clock recovery.
 
-Note: this uses the conventional symbol basis. Real CCSDS RS uses the dual basis. Before
-interoperating with third-party CCSDS ground stations, add the basis transform (a
-fixed 8×8 bit matrix) on both ends. Our own satellite and gateway match each other.
+Symbol basis: CCSDS transmits RS symbols in the Berlekamp dual basis. By default (BASIS="dual")
+data bytes go out unchanged and are treated as dual-basis symbols; the encoder converts them to the
+conventional basis, computes parity, and converts the parity back (the same 8×8 bit matrix as
+Phil Karn's libfec encode_rs_ccsds). That makes our link blocks readable by standard CCSDS
+decoders. BASIS="conventional" keeps the older, non-interoperable form.
 
 The flight side only needs `encode_block` (implemented again in C in flight/libforge);
 the ground uses `decode_stream`. Both are pure Python with no dependencies. The tests check
@@ -39,6 +41,20 @@ for _i in range(255):
     if _x & 0x100: _x ^= PRIM
 for _i in range(255, 512):
     EXP[_i] = EXP[_i - 255]
+
+
+# --- CCSDS dual-basis conversion (libfec ccsds_tal.c): TAL = conventional -> dual, TAL1 = inverse ---
+_TAL_ROWS = (0x8D, 0xEF, 0xEC, 0x86, 0xFA, 0x99, 0xAF, 0x7B)
+TAL = [0] * 256
+TAL1 = [0] * 256
+for _i in range(256):
+    _v = 0
+    for _k in range(8):
+        if _i & (1 << _k):
+            _v ^= _TAL_ROWS[7 - _k]
+    TAL[_i] = _v
+    TAL1[_v] = _i
+BASIS = "dual"
 
 
 def gmul(a: int, b: int) -> int:
@@ -79,6 +95,21 @@ def _poly_eval(p: list[int], x: int) -> int:
     for c in p:
         y = gmul(y, x) ^ c
     return y
+
+
+def rs_encode_ccsds(data: bytes, basis: str = BASIS) -> bytes:
+    """RS(255,223) in the requested symbol basis. Data bytes are sent unchanged either way."""
+    if basis == "conventional":
+        return rs_encode(data)
+    par = rs_encode(bytes(TAL1[b] for b in data))[K:]
+    return bytes(data) + bytes(TAL[b] for b in par)
+
+
+def rs_decode_ccsds(cw: bytes, basis: str = BASIS) -> tuple[bytes, int]:
+    if basis == "conventional":
+        return rs_decode(cw)
+    data, fixed = rs_decode(bytes(TAL1[b] for b in cw))
+    return bytes(TAL[b] for b in data), fixed
 
 
 def rs_decode(cw: bytes) -> tuple[bytes, int]:
@@ -175,14 +206,14 @@ def randomise(b: bytes) -> bytes:
     return bytes(x ^ y for x, y in zip(b, _PN))
 
 
-def encode_block(frame: bytes) -> bytes:
+def encode_block(frame: bytes, basis: str = BASIS) -> bytes:
     """One v1 frame -> one link block (ASM + randomised RS codewords)."""
     n_cw = -(-(len(frame) + 3) // K)
     if n_cw > 20:
         raise ValueError("frame too large for one link block (max 20 codewords)")
     payload = struct.pack(">HB", len(frame), n_cw) + frame
     payload += bytes(n_cw * K - len(payload))
-    cws = b"".join(rs_encode(payload[i * K:(i + 1) * K]) for i in range(n_cw))
+    cws = b"".join(rs_encode_ccsds(payload[i * K:(i + 1) * K], basis) for i in range(n_cw))
     return ASM + randomise(cws)
 
 
@@ -195,7 +226,7 @@ def _asm_positions(stream: bytes, max_bit_errors: int = 3):
         i += 1
 
 
-def decode_stream(stream: bytes):
+def decode_stream(stream: bytes, basis: str = BASIS):
     """Find link blocks in a received byte stream and return (frames, stats).
 
     Tolerates noise before/between blocks, up to 3 bit errors in the ASM and up to
@@ -211,14 +242,14 @@ def decode_stream(stream: bytes):
 
         try:
             first = randomise(body[:N])
-            msg, fixed = rs_decode(first)
+            msg, fixed = rs_decode_ccsds(first, basis)
             flen, n_cw = struct.unpack(">HB", msg[:3])
             if not 1 <= n_cw <= 20 or len(body) < n_cw * N or flen > n_cw * K - 3:
                 raise RSDecodeError("bad header")
             der = randomise(body[:n_cw * N])
             data = bytearray(msg)
             for i in range(1, n_cw):
-                m, e = rs_decode(der[i * N:(i + 1) * N]); data += m; fixed += e
+                m, e = rs_decode_ccsds(der[i * N:(i + 1) * N], basis); data += m; fixed += e
             frames.append(bytes(data[3:3 + flen]))
             stats["blocks"] += 1; stats["corrected_bytes"] += fixed
             pos = p + 4 + n_cw * N
