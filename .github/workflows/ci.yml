@@ -99,7 +99,7 @@ jobs:
           python flight/run_payload.py --predictor --seconds 15
       - name: Mission ops against the flight binary (signed commands, safe mode, persistence)
         run: |
-          pip install pytest
+          pip install pytest cryptography
           python -m pytest -q tests/test_flight_ops.py
       - name: Payload deployment on 64-bit ARM (cross-compiled, run under QEMU)
         run: |
