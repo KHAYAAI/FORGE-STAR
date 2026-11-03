@@ -20,7 +20,11 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `flight/libforge/`: C99 core: frames + ACKs, RS encode, store-and-forward ring buffer (per-record CRC, scrubbing, save/load), `forge_auth` (SHA-256/HMAC command auth), `forge_orbit` (onboard pass predictor), `forge_device` (device SDK). 4 ctest suites. Vectors: `test/make_vectors.py`, `test/make_orbit_vectors.py`.
 - `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`). Components: `StoreForward` (6 UTs; acks, safe mode, persistence `FORGE_STORE`), `CmdAuth` (HMAC command authentication between deframer and dispatcher; key `FORGE_CMD_KEY`), `ModeManager` (safe mode on low bus voltage / lost bus link / command), `PassPredictor` (onboard passes; `FORGE_ELEMENTS`, `FORGE_SIM_S_PER_TICK`), `PayloadSim` (hardware stand-in). Deployment `Payload/`. Build: `fprime-util generate && fprime-util build`; ARM: `fprime-util generate aarch64-linux && fprime-util build aarch64-linux`. Run and verify: `python3 flight/run_payload.py [--arch aarch64]` (QEMU for ARM). `FORGE_CYCLE_MS` speeds up the 1 Hz loop.
 - `ground/ops/`: mission ops (`forge_ops.py`: F´ framing, dictionary decode, signed commands; `cmd_auth.py`). Procedures in `docs/operations/`.
-- `forgestar/modem.py`: software BPSK modem (RRC, Doppler, timing, PLL); gateway reads `*.cf32` IQ files.
+- `forgestar/modem.py` + `forgestar/conv.py`: software BPSK modem (RRC, Doppler, timing, PLL) with the CCSDS K=7 r=1/2 convolutional inner code + soft Viterbi (decodes at Eb/N0 ≈ 2.5 dB vs 6 dB for RS alone); gateway reads `*.cf32` IQ files. C encoder `forge_conv_encode`.
+- Commands are ChaCha20-encrypted + HMAC-SHA256 (encrypt-then-MAC, packet type in clear); `FORGE_CMD_ENCRYPT=0` for sign-only.
+- `ground/billing/billing.py`: monthly invoices (per active device, minimum charge, SLA credit); `/v1/invoices`. Raw messages retained 24 months (TimescaleDB policy).
+- `scripts/itu_parameters.py` → `docs/itu/FILING_PARAMETERS.md`: draft NGSO filing sheet (shells, bands, EIRP/PFD, gateways, Res. 35 milestones).
+- The dev stack now runs the Stage 3 design by default (sandf `SHELLS=42:7:45,6:1:10`, 6 gateways, 16° mask). Onboard buffer `FORGE_SF_CAPACITY` = 16384.
 - `ground/deploy/`: production overlay (TLS via Caddy, backups, no exposed data ports, required secrets).
 - `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage; rate limit, audit log, `/metrics`, key revocation. Keys: `docker compose exec api python app.py create-key "<customer>"`.
 - `forgestar/params/rf.yaml`: radio parameters with source/status. `docs/verification/register.yaml` → `scripts/verify_register.py` → `docs/verification/VERIFY.md`: everything still to confirm.
@@ -86,11 +90,10 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 Done (Nov 2026): signed commanding, safe mode, persistence + memory scrubbing, onboard pass predictor, device SDK, mission ops tool, software modem, production overlay, API hardening.
 Hardware-dependent (blocked until lab kit / bus partner / board exist): NB-IoT NTN base station on the payload SDR (OpenAirInterface), real radio + bus drivers, payload computer port, HIL and qualification tests.
 Still possible without hardware:
-1. CCSDS convolutional inner code (K=7, r=1/2) + Viterbi in `forgestar/fec.py` and libforge (~3 dB link margin).
-2. Command encryption (AES-GCM) on top of `CmdAuth`; key-upload command design with the bus partner.
-3. sandf multi-shell (42+6) so the live stack runs the Stage 3 design; ITU filing parameter sheet.
-4. Customer onboarding + billing service (from `/v1/report`); POPIA retention policies in TimescaleDB.
-5. Autoroute the payload interface board once Freerouting is approved.
+1. Autoroute + review the payload interface board (needs Freerouting approval).
+2. F´ ground system (fprime-gds) on Python ≤3.12 as an alternative operator console.
+3. Customer onboarding portal (self-service keys, plans) on top of the API.
+4. Encryption of the downlink for customers that require confidentiality over the air.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

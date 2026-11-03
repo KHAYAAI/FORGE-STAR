@@ -60,7 +60,9 @@ In **Stage 0**, before our own satellites fly, the same platform carries traffic
 | **Flight core** | Portable C99, no dynamic memory: store-and-forward buffer (CRC-checked, survives reboot), frames, acks, Reed–Solomon, HMAC command auth, pass predictor. Byte-identical to the ground code. | [`flight/libforge/`](flight/libforge) |
 | **Device SDK** | C99 library for customer devices: queue, re-send until acked, expiry | [`flight/libforge/include/forge_device.h`](flight/libforge/include/forge_device.h) |
 | **Mission operations** | Signed commanding and telemetry/event decoding for the flight software; procedures | [`ground/ops/`](ground/ops), [`docs/operations/`](docs/operations) |
-| **Software modem** | BPSK receive chain from IQ samples (Doppler, timing, phase) to link blocks | [`forgestar/modem.py`](forgestar/modem.py) |
+| **Software modem** | BPSK receive chain from IQ samples (Doppler, timing, phase) with CCSDS convolutional coding + Viterbi | [`forgestar/modem.py`](forgestar/modem.py), [`forgestar/conv.py`](forgestar/conv.py) |
+| **Billing** | Monthly invoices per active device with SLA credits | [`ground/billing/`](ground/billing) |
+| **ITU filing sheet** | Draft NGSO filing parameters generated from the design | [`docs/itu/`](docs/itu) |
 | **Link layer** | RS(255,223) with CCSDS parameters and dual basis, CCSDS randomiser, sync marker. Corrects up to 16 bad bytes per block. | [`forgestar/fec.py`](forgestar/fec.py) |
 | **Frames** | Store-and-forward data frames and ACK frames shared by satellite and ground | [`forgestar/frames.py`](forgestar/frames.py) |
 | **Gateway** | Decodes downlinks (Kafka, capture files, SatNOGS Network), removes duplicates, sends acks | [`ground/gateway/`](ground/gateway) |
@@ -89,7 +91,7 @@ cd FORGE-STAR
 pip install -r requirements.txt
 ```
 
-**The platform** (simulated devices and satellites, gateway, database, API):
+**The platform** (simulated devices and the Stage 3 constellation of 48 satellites and 6 gateways, gateway, database, API):
 
 ```bash
 cd ground && docker compose up -d

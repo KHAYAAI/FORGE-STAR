@@ -10,7 +10,7 @@
 namespace ForgeSat {
 
 CmdAuth::CmdAuth(const char* const compName)
-    : CmdAuthComponentBase(compName), m_keyLen(0), m_last(0), m_accepted(0), m_rejected(0) {
+    : CmdAuthComponentBase(compName), m_keyLen(0), m_encrypted(true), m_last(0), m_accepted(0), m_rejected(0) {
     std::memset(this->m_key, 0, sizeof this->m_key);
 }
 
@@ -19,6 +19,9 @@ CmdAuth::~CmdAuth() {}
 void CmdAuth::configure(const U8* key, U32 len, U32 lastCounter) {
     this->m_keyLen = len > sizeof this->m_key ? static_cast<U32>(sizeof this->m_key) : len;
     std::memcpy(this->m_key, key, this->m_keyLen);
+    forge_auth_derive(this->m_key, this->m_keyLen, this->m_kEnc, this->m_kMac);
+    const char* enc = std::getenv("FORGE_CMD_ENCRYPT");
+    this->m_encrypted = !(enc && enc[0] == '0');
     this->m_last = lastCounter;
     this->log_ACTIVITY_HI_KeyLoaded(this->m_keyLen);
 }
@@ -45,8 +48,10 @@ void CmdAuth::comIn_handler(FwIndexType portNum, Fw::ComBuffer& data, U32 contex
         return;
     }
     size_t plen = 0;
-    const forge_auth_result_t r = forge_auth_verify(this->m_key, this->m_keyLen, data.getBuffAddr(),
-                                                    data.getBuffLength(), &this->m_last, &plen);
+    const forge_auth_result_t r =
+        this->m_encrypted
+            ? forge_auth_open(this->m_kEnc, this->m_kMac, data.getBuffAddr(), data.getBuffLength(), &this->m_last, &plen)
+            : forge_auth_verify(this->m_key, this->m_keyLen, data.getBuffAddr(), data.getBuffLength(), &this->m_last, &plen);
     if (r != FORGE_AUTH_OK) {
         this->m_rejected++;
         this->log_WARNING_HI_Rejected(r == FORGE_AUTH_SHORT    ? CmdAuth_RejectReason::TOO_SHORT

@@ -86,3 +86,51 @@ forge_auth_result_t forge_auth_verify(const uint8_t *key, size_t key_len, const 
     *payload_len = len - FORGE_AUTH_TRAILER;
     return FORGE_AUTH_OK;
 }
+
+/* ---------------- ChaCha20 (RFC 8439) ---------------- */
+#define ROTL(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+#define QR(a, b, c, d) a += b; d ^= a; d = ROTL(d, 16); c += d; b ^= c; b = ROTL(b, 12); \
+                       a += b; d ^= a; d = ROTL(d, 8);  c += d; b ^= c; b = ROTL(b, 7);
+static uint32_t le32(const uint8_t *p) { return (uint32_t)p[0] | (uint32_t)p[1] << 8 | (uint32_t)p[2] << 16 | (uint32_t)p[3] << 24; }
+
+static void chacha_block(const uint32_t in[16], uint8_t out[64]) {
+    uint32_t x[16];
+    memcpy(x, in, sizeof x);
+    for (int i = 0; i < 10; i++) {
+        QR(x[0], x[4], x[8], x[12]) QR(x[1], x[5], x[9], x[13]) QR(x[2], x[6], x[10], x[14]) QR(x[3], x[7], x[11], x[15])
+        QR(x[0], x[5], x[10], x[15]) QR(x[1], x[6], x[11], x[12]) QR(x[2], x[7], x[8], x[13]) QR(x[3], x[4], x[9], x[14])
+    }
+    for (int i = 0; i < 16; i++) {
+        uint32_t v = x[i] + in[i];
+        out[4 * i] = (uint8_t)v; out[4 * i + 1] = (uint8_t)(v >> 8); out[4 * i + 2] = (uint8_t)(v >> 16); out[4 * i + 3] = (uint8_t)(v >> 24);
+    }
+}
+
+void forge_chacha20_xor(const uint8_t key[32], const uint8_t nonce[12], uint32_t block, uint8_t *buf, size_t len) {
+    uint32_t st[16] = {0x61707865, 0x3320646e, 0x79622d32, 0x6b206574};
+    for (int i = 0; i < 8; i++) st[4 + i] = le32(key + 4 * i);
+    st[12] = block; st[13] = le32(nonce); st[14] = le32(nonce + 4); st[15] = le32(nonce + 8);
+    uint8_t ks[64];
+    for (size_t off = 0; off < len; off += 64) {
+        chacha_block(st, ks); st[12]++;
+        for (size_t i = 0; i < 64 && off + i < len; i++) buf[off + i] ^= ks[i];
+    }
+}
+
+void forge_auth_derive(const uint8_t *master, size_t len, uint8_t k_enc[32], uint8_t k_mac[32]) {
+    forge_hmac_sha256(master, len, (const uint8_t *)"forge-enc", 9, k_enc);
+    forge_hmac_sha256(master, len, (const uint8_t *)"forge-mac", 9, k_mac);
+}
+
+forge_auth_result_t forge_auth_open(const uint8_t k_enc[32], const uint8_t k_mac[32], uint8_t *cmd, size_t len,
+                                    uint32_t *last_counter, size_t *payload_len) {
+    uint32_t last = *last_counter;
+    forge_auth_result_t r = forge_auth_verify(k_mac, 32, cmd, len, &last, payload_len);  /* MAC over ciphertext first */
+    if (r != FORGE_AUTH_OK) return r;
+    const uint8_t *c = cmd + *payload_len;
+    uint8_t nonce[12] = {0, 0, 0, 0, 0, 0, 0, 0, c[0], c[1], c[2], c[3]};
+    if (*payload_len < 4) return FORGE_AUTH_SHORT;
+    forge_chacha20_xor(k_enc, nonce, 1, cmd + 4, *payload_len - 4);   /* packet type (4 bytes) is sent in clear */
+    *last_counter = last;
+    return FORGE_AUTH_OK;
+}

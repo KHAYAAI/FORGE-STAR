@@ -24,7 +24,7 @@ def test_c_payload_downlink_decodes_on_ground(tmp_path):
     frames, st = decode_stream(out.read_bytes())
     assert st["failed"] == 0 and st["blocks"] == len(frames) > 1
     decoded = [decode(f) for f in frames]
-    assert sum(len(f.records) for f in decoded) == 512                 # FORGE_SF_CAPACITY
+    assert sum(len(f.records) for f in decoded) == 16384               # FORGE_SF_CAPACITY
     assert [f.seq for f in decoded] == list(range(len(decoded)))
     times = [r.t_created for f in decoded for r in f.records]
     assert times == sorted(times) and times[0] == 1790000000           # oldest first, nothing lost

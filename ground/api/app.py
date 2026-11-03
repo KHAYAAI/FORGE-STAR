@@ -134,6 +134,12 @@ def sla(days: int = Query(7, ge=1, le=90), cust: str = Depends(customer), repo: 
     return {"customer": cust, "days": days, "target_p95_min": SLA_TARGET_P95_MIN, "paths": rows}
 
 
+@app.get("/v1/invoices")
+def invoices(cust: str = Depends(customer), repo: Repo = Depends(get_repo)):
+    """Issued monthly statements (ground/billing/billing.py), newest first."""
+    return {"customer": cust, "invoices": repo.invoices(cust)}
+
+
 @app.get("/v1/report")
 def monthly_report(month: str = Query(..., pattern=r"^\d{4}-\d{2}$", examples=["2026-11"]),
                    cust: str = Depends(customer), repo: Repo = Depends(get_repo)):

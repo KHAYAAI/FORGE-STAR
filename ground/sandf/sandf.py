@@ -42,7 +42,22 @@ DOWNLINK_MSGS_PER_S = int(os.environ.get("DOWNLINK_MSGS_PER_S", 2000))
 EMIT = os.environ.get("EMIT", "frames")  # frames: binary frames to ground.frames (production path); json: straight to iot.uplink
 CHANNEL_BER = float(os.environ.get("CHANNEL_BER", 0))  # inject random bit errors to exercise FEC
 POLICY = os.environ.get("POLICY", "resend")  # resend: devices re-send until acked (needs gateway acks); single: one copy
-GATEWAYS = [Site("Hartebeesthoek", "SA", -25.89, 27.69), Site("Cape Town", "SA", -33.93, 18.42)]
+# Orbital shells "n:planes:inclination,...". Default = Stage 3 design (sim/equatorial_study.py): 42 @45° + 6 @10°.
+SHELLS = os.environ.get("SHELLS", "")
+# Gateways "name:lat:lon;..." Default = the 6-gateway network of the Stage 3 design.
+GATEWAY_SPEC = os.environ.get("GATEWAYS", "Hartebeesthoek:-25.89:27.69;Cape Town:-33.93:18.42;Walvis Bay:-22.95:14.5;"
+                              "Mauritius:-20.2:57.5;Malindi:-3.0:40.2;Lagos:6.5:3.4")
+GATEWAYS = [Site(n, "", float(la), float(lo)) for n, la, lo in (g.split(":") for g in GATEWAY_SPEC.split(";") if g)]
+
+
+def shells():
+    if not SHELLS:
+        return [Constellation(SATS, PLANES, None if INC == "mixed" else float(INC))]
+    out = []
+    for spec in SHELLS.split(","):
+        n, p, i = spec.split(":")
+        out.append(Constellation(int(n), int(p), float(i)))
+    return out
 
 
 def main():
@@ -56,12 +71,13 @@ def main():
             break
         except Exception:
             time.sleep(2)
-    c = Constellation(SATS, PLANES, None if INC == "mixed" else float(INC), label="sandf")
+    cs = shells()
     pending: deque[Pending] = deque()
     buffers = defaultdict(Buffer)
     net = ResendNetwork(BUFFER_MSGS)
     wall0 = time.time(); last_report = wall0; stats = defaultdict(int); seq = defaultdict(int)
-    print(f"sandf: {SATS} sats / {PLANES} planes / inc {INC}, speedup {SPEEDUP}x", flush=True)
+    print(f"sandf: {sum(c.n for c in cs)} sats in {len(cs)} shell(s) ({SHELLS or f'{SATS}:{PLANES}:{INC}'}), "
+          f"{len(GATEWAYS)} gateways, speedup {SPEEDUP}x", flush=True)
     while True:
         tick_start = time.time()
         sim_t = (tick_start - wall0) * SPEEDUP
@@ -78,7 +94,7 @@ def main():
             else:
                 pending.append(Pending(msg.value, sim_t))
                 if len(pending) > 500000: pending.popleft(); stats["dropped_device_queue"] += 1
-        sat = propagate_ecef(c, np.array([sim_t]))
+        sat = np.concatenate([propagate_ecef(c, np.array([sim_t])) for c in cs], axis=1)
         gw_el, _ = look(sat, GATEWAYS)
         budget = int(DOWNLINK_MSGS_PER_S * TICK_S * SPEEDUP)
         gw_vis = gw_el[0].max(0) >= GATEWAY_MASK

@@ -10,6 +10,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT))
 from forgestar.fec import encode_block  # noqa: E402
+from forgestar import conv  # noqa: E402
+import numpy as np  # noqa: E402
 from forgestar.frames import Ack, Frame, Record, short_id  # noqa: E402
 
 recs = [
@@ -38,5 +40,6 @@ out.append("};")
 out.append(carr("VEC_FRAME", frame) + carr("VEC_LINK", link))
 ack = Ack(4, 9, 1790001000, [(recs[0].device_short_id, recs[0].t_created), (recs[2].device_short_id, recs[2].t_created)]).encode()
 out.append(carr("VEC_ACK", ack))
+out.append(carr("VEC_CONV", np.packbits(conv.encode(link)).tobytes()))
 (Path(__file__).parent / "vectors.h").write_text("\n".join(out))
 print(f"frame {len(frame)} bytes, link block {len(link)} bytes")

@@ -19,14 +19,34 @@ def test_clean_round_trip():
     assert fec.decode_stream(modem.demodulate(modem.channel(modem.modulate(blk), 40)))[0] == [raw]
 
 
-def test_doppler_phase_timing_and_noise_at_6db():
-    raw, blk = block(); x = modem.modulate(blk)
+def test_rs_only_at_6db_with_doppler_phase_timing():
+    raw, blk = block(); x = modem.modulate(blk, coded=False)
     for trial in range(4):
         rng = np.random.default_rng(trial)
         y = modem.channel(x, 6.0, freq_offset=rng.uniform(-0.004, 0.004), phase=rng.uniform(0, 6.28),
-                          delay=int(rng.integers(0, 50)), rng=rng)
-        frames, st = fec.decode_stream(modem.demodulate(y))
+                          delay=int(rng.integers(0, 50)), rng=rng, code_rate_inv=1)
+        frames, st = fec.decode_stream(modem.demodulate(y, coded=False))
         assert frames == [raw] and st["corrected_bytes"] > 0      # RS is doing real work at this SNR
+
+
+def test_concatenated_code_at_2_5db():
+    """RS + convolutional code works ~3.5 dB below where RS alone fails."""
+    raw, blk = block(); x = modem.modulate(blk)
+    for trial in range(4):
+        rng = np.random.default_rng(10 + trial)
+        y = modem.channel(x, 2.5, freq_offset=rng.uniform(-0.004, 0.004), phase=rng.uniform(0, 6.28),
+                          delay=int(rng.integers(0, 50)), rng=rng)
+        assert fec.decode_stream(modem.demodulate(y))[0] == [raw]
+    xu = modem.modulate(blk, coded=False)
+    yu = modem.channel(xu, 2.5, rng=np.random.default_rng(1), code_rate_inv=1)
+    assert fec.decode_stream(modem.demodulate(yu, coded=False))[0] == []
+
+
+def test_viterbi_clean_and_matches_encoder():
+    from forgestar import conv
+    bits = np.random.default_rng(5).integers(0, 2, 500).astype(np.uint8)
+    dec, _ = conv.viterbi(1.0 - 2.0 * conv.encode_bits(bits))
+    assert np.array_equal(dec, bits)
 
 
 def test_gateway_reads_iq_recordings(tmp_path):

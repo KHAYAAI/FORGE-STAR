@@ -7,12 +7,15 @@ Receive (what a gateway SDR / SatNOGS recording goes through):
   3. symbol timing: pick the sample phase with the most energy (Gardner-free, fine for short bursts)
   4. carrier phase/residual frequency: decision-directed PLL
   5. bits -> bytes; the 180° BPSK ambiguity is resolved by finding the ASM (or its inverse)
-The bytes then go to forgestar.fec.decode_stream. numpy only.
+With coded=True (default) the CCSDS K=7 r=1/2 convolutional code (forgestar/conv.py) sits between the
+link block and the modulator, and the receiver runs a soft-decision Viterbi decoder: about 3 dB more
+margin than Reed–Solomon alone. The bytes then go to forgestar.fec.decode_stream. numpy only.
 """
 from __future__ import annotations
 
 import numpy as np
 
+from . import conv
 from .fec import ASM
 
 SPS = 8          # samples per symbol
@@ -36,28 +39,30 @@ def rrc(sps: int = SPS, beta: float = ROLLOFF, span: int = SPAN) -> np.ndarray:
 _H = rrc()
 
 
-def modulate(data: bytes, preamble_bytes: int = 16) -> np.ndarray:
+def modulate(data: bytes, preamble_bytes: int = 16, coded: bool = True) -> np.ndarray:
     """Bytes -> complex baseband. A 0x55 preamble helps the receiver settle before the ASM."""
     bits = np.unpackbits(np.frombuffer(b"\x55" * preamble_bytes + data + b"\x00" * 4, dtype=np.uint8))
+    if coded:
+        bits = conv.encode_bits(bits)
     sym = 1.0 - 2.0 * bits                     # 0 -> +1, 1 -> -1
     up = np.zeros(len(sym) * SPS); up[::SPS] = sym
     return np.convolve(up, _H).astype(np.complex128)
 
 
 def channel(x: np.ndarray, ebn0_db: float, freq_offset: float = 0.0, phase: float = 0.0,
-            delay: int = 0, rng: np.random.Generator | None = None) -> np.ndarray:
-    """AWGN at Eb/N0 (signal energy per bit measured from x), plus frequency offset (cycles/sample),
-    carrier phase and sample delay."""
+            delay: int = 0, rng: np.random.Generator | None = None, code_rate_inv: float = 2.0) -> np.ndarray:
+    """AWGN at Eb/N0 per *information* bit (code_rate_inv=2 for the coded link, 1 for uncoded),
+    plus frequency offset (cycles/sample), carrier phase and sample delay."""
     rng = rng or np.random.default_rng(0)
     y = np.concatenate([np.zeros(delay, complex), x])
     n = np.arange(len(y))
     y = y * np.exp(1j * (2 * np.pi * freq_offset * n + phase))
-    eb = np.sum(np.abs(x) ** 2) / (len(x) / SPS)          # energy per BPSK symbol = per bit
+    eb = np.sum(np.abs(x) ** 2) / (len(x) / SPS) * code_rate_inv     # energy per information bit
     n0 = eb / (10 ** (ebn0_db / 10))
     return y + np.sqrt(n0 / 2) * (rng.standard_normal(len(y)) + 1j * rng.standard_normal(len(y)))
 
 
-def demodulate(y: np.ndarray, max_offset: float = 0.02) -> bytes:
+def demodulate(y: np.ndarray, max_offset: float = 0.02, coded: bool = True) -> bytes:
     """Complex baseband -> byte stream (BPSK ambiguity resolved via the ASM)."""
     # 1. coarse frequency offset from the squared signal
     sq = y ** 2
@@ -79,7 +84,18 @@ def demodulate(y: np.ndarray, max_offset: float = 0.02) -> bytes:
         r = v * np.exp(-1j * ph); out[i] = r
         err = np.sign(r.real) * r.imag
         fr += b * err; ph += fr + a * err
-    bits = (out.real < 0).astype(np.uint8)
+    if coded:
+        # soft Viterbi on both symbol-pair alignments; keep the better path (polarity is fixed below via the ASM)
+        soft = out.real / (np.mean(np.abs(out.real)) or 1.0)
+        best_bits, best_metric = None, -np.inf
+        for off in (0, 1):
+            b, m = conv.viterbi(soft[off:off + (len(soft) - off) // 2 * 2], tail=False)
+            m /= max(len(b), 1)
+            if m > best_metric:
+                best_bits, best_metric = b, m
+        bits = best_bits
+    else:
+        bits = (out.real < 0).astype(np.uint8)
     # 5. bytes, both polarities; keep the one containing the ASM
     asm_bits = np.unpackbits(np.frombuffer(ASM, dtype=np.uint8))
     best_stream, best_score = b"", -1

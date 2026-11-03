@@ -103,3 +103,14 @@ def test_store_survives_restart(tmp_path):
             ev = link.wait_event("storeForward.Restored", 10)
             assert ev and ev["args"][0] > 0
         p.terminate(); p.wait(timeout=10); link.close()
+
+
+def test_commands_are_encrypted_on_the_wire(flight):
+    """The plaintext opcode must not appear in the uplinked bytes; the satellite still executes it."""
+    import struct
+    link, dic, ops = flight
+    pkt = ops.command_packet(dic, "Payload.cmdDisp.CMD_NO_OP", [])
+    sealed = link.signer.sign(pkt)
+    assert pkt[4:8] not in sealed[:len(pkt)]                     # opcode hidden
+    link.conn.sendall(ops.frame(sealed))
+    assert link.wait_event("NoOpReceived", 10)

@@ -25,6 +25,9 @@ class CmdAuth : public CmdAuthComponentBase {
                                const Fw::CmdResponse& response) override;
 
     U8 m_key[64];
+    U8 m_kEnc[32];
+    U8 m_kMac[32];
+    bool m_encrypted;   //!< commands are ChaCha20-encrypted (default); FORGE_CMD_ENCRYPT=0 for sign-only
     U32 m_keyLen;
     U32 m_last;
     U32 m_accepted;

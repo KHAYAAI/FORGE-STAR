@@ -30,6 +30,13 @@ class PgRepo:
         self.db.execute("""CREATE TABLE IF NOT EXISTS api_audit (
             time TIMESTAMPTZ NOT NULL DEFAULT now(), customer TEXT, method TEXT, path TEXT, status INT, ip TEXT)""")
 
+    def invoices(self, customer: str) -> list[dict]:
+        try:
+            return self.db.execute("SELECT month, active_devices, messages, sla_p95_min, sla_met, subtotal, credit, total, "
+                                   "currency FROM invoices WHERE customer = %s ORDER BY month DESC", (customer,)).fetchall()
+        except Exception:
+            return []
+
     def revoke_key(self, key: str) -> bool:
         cur = self.db.execute("UPDATE api_keys SET revoked = true WHERE key_hash = %s", (hash_key(key),))
         return cur.rowcount > 0
@@ -86,6 +93,9 @@ class MemoryRepo:
 
     def create_key(self, customer):
         key = "fs_" + secrets.token_urlsafe(24); self.keys[hash_key(key)] = customer; return key
+
+    def invoices(self, customer):
+        return [i for i in getattr(self, "invoice_rows", []) if i.get("customer") == customer]
 
     def revoke_key(self, key):
         return self.keys.pop(hash_key(key), None) is not None

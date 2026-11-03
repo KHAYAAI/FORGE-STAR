@@ -67,16 +67,17 @@ services:
     restart: unless-stopped
 
   sandf:
-    # Simulated space segment: 24 sats at 45° by default, clock sped up 60x.
+    # Simulated space segment: the Stage 3 design by default (42 @45° + 6 @10°, 6 gateways), clock sped up 60x.
+    # Override with SHELLS (e.g. "24:4:45") and GATEWAYS ("name:lat:lon;...").
     build:
       context: ..
       dockerfile: ground/sandf/Dockerfile
     environment:
       KAFKA_BOOTSTRAP: kafka:9092
-      SATS: ${SATS:-24}
-      PLANES: ${PLANES:-4}
-      INC: ${INC:-45}
+      SHELLS: ${SHELLS:-42:7:45,6:1:10}
+      UPLINK_MASK_DEG: ${UPLINK_MASK_DEG:-16}   # isoflux antenna
       SPEEDUP: ${SPEEDUP:-60}
+      GATEWAYS: ${GATEWAYS:-Hartebeesthoek:-25.89:27.69;Cape Town:-33.93:18.42;Walvis Bay:-22.95:14.5;Mauritius:-20.2:57.5;Malindi:-3.0:40.2;Lagos:6.5:3.4}
       EMIT: frames   # FEC link blocks -> ground.frames -> gateway (set json to bypass the gateway)
       CHANNEL_BER: ${CHANNEL_BER:-0.0005}   # simulated radio bit-error rate; FEC corrects it
     depends_on:

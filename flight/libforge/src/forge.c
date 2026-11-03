@@ -258,3 +258,25 @@ uint32_t forge_sf_apply_acks(forge_sf_t *sf, const forge_ack_key_t *keys, size_t
     sf->count = kept;
     return removed;
 }
+
+/* ---------------- CCSDS convolutional encoder ---------------- */
+static int parity8(unsigned x) { x ^= x >> 4; x ^= x >> 2; x ^= x >> 1; return (int)(x & 1u); }
+
+size_t forge_conv_encode(const uint8_t *in, size_t len, uint8_t *out, size_t cap) {
+    const size_t nbits = len * 8u + 6u, nsym = nbits * 2u, nbytes = (nsym + 7u) / 8u;
+    if (cap < nbytes) return 0;
+    memset(out, 0, nbytes);
+    unsigned state = 0;   /* 6 previous bits, newest in bit 5 */
+    size_t o = 0;
+    for (size_t i = 0; i < nbits; i++) {
+        unsigned b = i < len * 8u ? (unsigned)((in[i / 8u] >> (7u - i % 8u)) & 1u) : 0u;
+        unsigned reg = (b << 6) | state;
+        unsigned s1 = (unsigned)parity8(reg & 0171u), s2 = (unsigned)parity8(reg & 0133u) ^ 1u;
+        if (s1) out[o / 8u] |= (uint8_t)(0x80u >> (o % 8u));
+        o++;
+        if (s2) out[o / 8u] |= (uint8_t)(0x80u >> (o % 8u));
+        o++;
+        state = reg >> 1;
+    }
+    return nbytes;
+}

@@ -57,9 +57,14 @@ void   forge_randomise(uint8_t *buf, size_t len);   /* CCSDS PN, restarts at 0 f
 /* Wrap a frame into ASM + randomised RS codewords. Returns bytes written, 0 on error. */
 size_t forge_link_encode(uint8_t *out, size_t out_cap, const uint8_t *frame, size_t frame_len);
 
+/* CCSDS convolutional code K=7 r=1/2 (G1=171o, G2=133o inverted), inner code under RS.
+ * Encodes len bytes plus a 6-bit zero tail; output symbols packed MSB first (2 bits per input bit).
+ * Returns output bytes written ((len*8+6)*2 bits rounded up), 0 if out_cap is too small. */
+size_t forge_conv_encode(const uint8_t *in, size_t len, uint8_t *out, size_t out_cap);
+
 /* ---- onboard store-and-forward buffer (ring, fixed capacity) ---- */
 #ifndef FORGE_SF_CAPACITY
-#define FORGE_SF_CAPACITY 512u
+#define FORGE_SF_CAPACITY 16384u   /* ~3.7 MB: covers ~10 h between gateway passes for one satellite (run_payload --predictor) */
 #endif
 typedef struct {
     forge_record_t rec[FORGE_SF_CAPACITY];

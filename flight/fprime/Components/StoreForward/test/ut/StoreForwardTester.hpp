@@ -13,7 +13,7 @@ namespace ForgeSat {
 
 class StoreForwardTester : public StoreForwardGTestBase {
   public:
-    static const FwSizeType MAX_HISTORY_SIZE = 4000;
+    static const FwSizeType MAX_HISTORY_SIZE = 40000;   // > 2x FORGE_SF_CAPACITY (overflow test)
     static const FwEnumStoreType TEST_INSTANCE_ID = 0;
     static const FwSizeType TEST_INSTANCE_QUEUE_DEPTH = 10;
 

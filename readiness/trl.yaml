@@ -11,8 +11,8 @@ subsystems:
      evidence: "Full topology with signed-command authentication, safe mode (ModeManager), persistence, onboard pass predictor; commanded live by ground/ops; CI runs native + ARM",
      next: "Real NB-IoT radio + X-band drivers and bus interface instead of PayloadSim; key storage; long soak test"}
   - {name: "Radio link layer (RS(255,223) CCSDS dual basis, randomiser, ASM)", trl: 4, needed_for_launch: 6,
-     evidence: "RS dual basis; software BPSK modem decodes through Doppler/phase/timing offsets at Eb/N0 ≥ 6 dB; gateway reads IQ recordings",
-     next: "Add CCSDS convolutional inner code (~3 dB); over-the-air test with SDR + SatNOGS"}
+     evidence: "CCSDS concatenated coding (RS dual basis + K=7 r=1/2 conv, soft Viterbi): decodes at Eb/N0 2.5 dB with Doppler/phase/timing offsets; C encoders byte-identical",
+     next: "Over-the-air test with SDR + SatNOGS; interop with a third-party CCSDS decoder"}
   - {name: "NB-IoT NTN payload radio", trl: 2, needed_for_launch: 6,
      evidence: "Link budget; lab test-bed plan (docs/ntn-testbed-plan.md); no hardware yet",
      next: "12-week OAI + Open5GS bench (needs TIA/DSI grant and ICASA test licence)"}

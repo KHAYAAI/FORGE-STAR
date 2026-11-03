@@ -83,3 +83,11 @@ def test_revoked_key_is_refused(client):
     assert c.get("/v1/devices", headers={"X-API-Key": k["DFFE"]}).status_code == 200
     assert repo.revoke_key(k["DFFE"])
     assert c.get("/v1/devices", headers={"X-API-Key": k["DFFE"]}).status_code == 401
+
+
+def test_invoices_only_own(client):
+    c, k = client
+    repo = api.app.dependency_overrides[api.get_repo]()
+    repo.invoice_rows = [{"customer": "Mine", "month": "2026-11", "total": 140}, {"customer": "DFFE", "month": "2026-11", "total": 9}]
+    r = c.get("/v1/invoices", headers={"X-API-Key": k["Mine"]}).json()
+    assert [i["total"] for i in r["invoices"]] == [140]

@@ -1,7 +1,8 @@
 module ForgeSat {
 
   @ Command authentication: sits between the uplink deframer and the command dispatcher.
-  @ Each uplinked command must end with a u32 counter and an HMAC-SHA256 tag (flight/libforge forge_auth.c).
+  @ Each uplinked command is ChaCha20-encrypted and ends with a u32 counter and an HMAC-SHA256 tag
+  @ over the ciphertext (flight/libforge forge_auth.c). Sign-only mode: FORGE_CMD_ENCRYPT=0.
   @ Forged, corrupted or replayed commands are dropped before anything executes.
   passive component CmdAuth {
 

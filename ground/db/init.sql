@@ -40,3 +40,22 @@ SELECT path, count(*) AS messages,
        percentile_cont(0.95) WITHIN GROUP (ORDER BY extract(epoch FROM received_at - time)) / 60 AS p95_min,
        max(extract(epoch FROM received_at - time)) / 60 AS max_min
 FROM uplinks WHERE time > now() - INTERVAL '7 days' GROUP BY path;
+
+
+-- POPIA: keep raw device messages for 24 months by default (per-customer exceptions in contracts)
+SELECT add_retention_policy('uplinks', INTERVAL '24 months', if_not_exists => TRUE);
+
+-- Commercial: customer plans and monthly invoices (ground/billing/billing.py)
+CREATE TABLE IF NOT EXISTS customer_plans (
+    customer        TEXT PRIMARY KEY,
+    price_per_device NUMERIC NOT NULL DEFAULT 3.50,   -- USD per active device per month
+    min_monthly     NUMERIC NOT NULL DEFAULT 0,
+    sla_p95_min     NUMERIC NOT NULL DEFAULT 60,      -- 95% of satellite messages within this many minutes
+    sla_credit_pct  NUMERIC NOT NULL DEFAULT 10,      -- credit if the SLA is missed
+    currency        TEXT NOT NULL DEFAULT 'USD'
+);
+CREATE TABLE IF NOT EXISTS invoices (
+    customer TEXT NOT NULL, month TEXT NOT NULL, active_devices INT NOT NULL, messages BIGINT NOT NULL,
+    sla_p95_min NUMERIC, sla_met BOOLEAN, subtotal NUMERIC NOT NULL, credit NUMERIC NOT NULL, total NUMERIC NOT NULL,
+    currency TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (customer, month)
+);

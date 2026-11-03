@@ -163,7 +163,8 @@ Proven open CubeSat boards (LibreCube, OreSat, PyCubed, BIRDS) replace heypcb's 
 
 - **Flight core (`flight/libforge`).** Portable C99 with no dynamic memory: the store-and-forward buffer, frame encoding and Reed–Solomon error correction. Its output is byte-identical to the Python ground code, which the shared test vectors prove.
 - **F´ component (`flight/fprime`).** `StoreForward` wraps the core with commands, telemetry and events. It's built and unit-tested in NASA F´ v3.5.1, and the ground decodes its downlink.
-- **Radio link layer.** RS(255,223) with CCSDS parameters, the CCSDS randomiser and a sync marker. It corrects up to 16 bad bytes per 255-byte block. The basis transform needed to work with third-party CCSDS stations is a known to-do.
+- **Radio link layer.** CCSDS concatenated coding: Reed–Solomon (255,223) in the dual basis, plus the K=7 rate-1/2 convolutional code with a soft-decision Viterbi decoder, the CCSDS randomiser and a sync marker. It decodes at about 2.5 dB Eb/N0, against about 6 dB for Reed–Solomon alone. A software BPSK modem handles Doppler, timing and phase.
+- **Command security.** Commands are ChaCha20-encrypted and HMAC-SHA256-authenticated, with replay protection, and checked on board before anything executes.
 - **Customer API (`ground/api`).** Per-customer keys, devices, messages, delivery SLA and monthly usage, with data hosted in SA.
 
 #### Can we physically build the satellite?

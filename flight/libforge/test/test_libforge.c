@@ -86,6 +86,11 @@ int main(int argc, char **argv) {
     img[30] ^= 1;
     CHECK(forge_sf_load(&restored, img, ilen) == 0, "corrupted save image rejected");
 
+    /* convolutional inner code: identical to forgestar/conv.py */
+    static uint8_t cv[2 * FORGE_LINK_MAX + 8];
+    size_t cn = forge_conv_encode(VEC_LINK, sizeof VEC_LINK, cv, sizeof cv);
+    CHECK(cn == sizeof VEC_CONV && memcmp(cv, VEC_CONV, cn) == 0, "convolutional code (K=7 r=1/2 CCSDS) identical to Python");
+
     printf(fails ? "\n%d FAILED\n" : "\nall passed\n", fails);
     return fails ? 1 : 0;
 }
