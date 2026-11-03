@@ -27,6 +27,16 @@ class PgRepo:
         self.db.execute("""CREATE TABLE IF NOT EXISTS api_keys (
             key_hash TEXT PRIMARY KEY, customer TEXT NOT NULL,
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(), revoked BOOLEAN NOT NULL DEFAULT false)""")
+        self.db.execute("""CREATE TABLE IF NOT EXISTS api_audit (
+            time TIMESTAMPTZ NOT NULL DEFAULT now(), customer TEXT, method TEXT, path TEXT, status INT, ip TEXT)""")
+
+    def revoke_key(self, key: str) -> bool:
+        cur = self.db.execute("UPDATE api_keys SET revoked = true WHERE key_hash = %s", (hash_key(key),))
+        return cur.rowcount > 0
+
+    def audit(self, customer: str, method: str, path: str, status: int, ip: str):
+        self.db.execute("INSERT INTO api_audit (customer, method, path, status, ip) VALUES (%s,%s,%s,%s,%s)",
+                        (customer, method, path, status, ip))
 
     def create_key(self, customer: str) -> str:
         key = "fs_" + secrets.token_urlsafe(24)
@@ -76,6 +86,12 @@ class MemoryRepo:
 
     def create_key(self, customer):
         key = "fs_" + secrets.token_urlsafe(24); self.keys[hash_key(key)] = customer; return key
+
+    def revoke_key(self, key):
+        return self.keys.pop(hash_key(key), None) is not None
+
+    def audit(self, customer, method, path, status, ip):
+        self.audit_log = getattr(self, "audit_log", []); self.audit_log.append((customer, method, path, status, ip))
 
     def customer_for_key(self, key_hash):
         return self.keys.get(key_hash)

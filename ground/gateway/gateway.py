@@ -5,7 +5,8 @@ messages on Kafka iot.uplink. Frame sources, all optional and combinable:
 
   * Kafka topic ground.frames   - frames from the simulated space segment (sandf, EMIT=frames)
                                   or from a modem/SDR decoder on the gateway LAN
-  * FRAME_DIR                   - *.bin (decoded v1 frames) or *.raw (demodulated bytes, FEC-decoded here)
+  * FRAME_DIR                   - *.bin (decoded v1 frames), *.raw (demodulated bytes, FEC-decoded here)
+                                  or *.cf32 (complex baseband IQ at 8 samples/symbol, demodulated by forgestar.modem)
                                   e.g. satnogs-client output; files move to done/ or bad/
   * SATNOGS_STATION_ID + token  - polls SatNOGS Network for this station's observations of NORAD_ID
                                   and fetches their demodulated data (hex frames)
@@ -123,6 +124,12 @@ def scan_dir(gw: Gateway, d: Path):
     for p in sorted(d.glob("*.bin")):          # already-decoded v1 frames
         n = gw.handle(p.read_bytes(), f"file:{p.name}")
         p.rename(d / ("bad" if n is None else "done") / p.name)
+    for p in sorted(d.glob("*.cf32")):         # complex baseband IQ recordings (SDR / SatNOGS): demodulate first
+        import numpy as np
+        from forgestar.modem import demodulate
+        before = gw.stats["link_blocks"]
+        gw.handle_link(demodulate(np.fromfile(p, dtype=np.complex64).astype(np.complex128)), f"iq:{p.name}")
+        p.rename(d / ("done" if gw.stats["link_blocks"] > before else "bad") / p.name)
     for p in sorted(d.glob("*.raw")):          # raw demodulated bytes from the radio: needs FEC
         before = gw.stats["link_blocks"]
         gw.handle_link(p.read_bytes(), f"file:{p.name}")

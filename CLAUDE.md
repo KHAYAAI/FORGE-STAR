@@ -17,9 +17,12 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `sim/antenna_trade.py`: payload antenna options vs usable elevation and service. `sim/sgp4_crosscheck.py`: validates `forgestar/orbits.py` against SGP4.
 - `readiness/readiness.yaml` + `readiness/tracker.py`: the outside work (ICASA/ITU, ownership, funding, lab, orbit, customers) with dependencies → `readiness/STATUS.md` (critical path, late items, Gantt, plan options). Update statuses there.
 - `forgestar/fec.py`: radio link layer: RS(255,223) with CCSDS parameters **in the CCSDS dual basis by default** (libfec-compatible), own encoder/decoder, CCSDS randomiser, ASM. `basis="conventional"` keeps the old form.
-- `flight/libforge/`: C99 flight core (frames, FEC encode, store-and-forward ring buffer), byte-identical to Python. Vectors: `flight/libforge/test/make_vectors.py`.
-- `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`). Components: `StoreForward` (5 UTs) and `PayloadSim` (hardware stand-in: NB-IoT messages, pass schedule, downlink file). Deployment `Payload/` (standard F´ topology + both components). Build: `fprime-util generate && fprime-util build`; ARM: `fprime-util generate aarch64-linux && fprime-util build aarch64-linux`. Run and verify: `python3 flight/run_payload.py [--arch aarch64]` (QEMU for ARM). `FORGE_CYCLE_MS` speeds up the 1 Hz loop.
-- `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage. Keys: `docker compose exec api python app.py create-key "<customer>"`.
+- `flight/libforge/`: C99 core: frames + ACKs, RS encode, store-and-forward ring buffer (per-record CRC, scrubbing, save/load), `forge_auth` (SHA-256/HMAC command auth), `forge_orbit` (onboard pass predictor), `forge_device` (device SDK). 4 ctest suites. Vectors: `test/make_vectors.py`, `test/make_orbit_vectors.py`.
+- `flight/fprime/`: F´ v3.5.1 project (submodule `flight/fprime/fprime`). Components: `StoreForward` (6 UTs; acks, safe mode, persistence `FORGE_STORE`), `CmdAuth` (HMAC command authentication between deframer and dispatcher; key `FORGE_CMD_KEY`), `ModeManager` (safe mode on low bus voltage / lost bus link / command), `PassPredictor` (onboard passes; `FORGE_ELEMENTS`, `FORGE_SIM_S_PER_TICK`), `PayloadSim` (hardware stand-in). Deployment `Payload/`. Build: `fprime-util generate && fprime-util build`; ARM: `fprime-util generate aarch64-linux && fprime-util build aarch64-linux`. Run and verify: `python3 flight/run_payload.py [--arch aarch64]` (QEMU for ARM). `FORGE_CYCLE_MS` speeds up the 1 Hz loop.
+- `ground/ops/`: mission ops (`forge_ops.py`: F´ framing, dictionary decode, signed commands; `cmd_auth.py`). Procedures in `docs/operations/`.
+- `forgestar/modem.py`: software BPSK modem (RRC, Doppler, timing, PLL); gateway reads `*.cf32` IQ files.
+- `ground/deploy/`: production overlay (TLS via Caddy, backups, no exposed data ports, required secrets).
+- `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage; rate limit, audit log, `/metrics`, key revocation. Keys: `docker compose exec api python app.py create-key "<customer>"`.
 - `forgestar/params/rf.yaml`: radio parameters with source/status. `docs/verification/register.yaml` → `scripts/verify_register.py` → `docs/verification/VERIFY.md`: everything still to confirm.
 - `hardware/`: in-house PCB pipeline (SKiDL → KiCad pcbnew placement → Freerouting → DRC → fab zip). Board 1: payload interface board (`hardware/boards/pib/pib.py`).
 - `tests/`: pytest suite (`pytest.ini` limits collection to `tests/`). `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
@@ -80,14 +83,14 @@ FORGE STAR provides connectivity for the other FORGE ventures:
 - **Autonomy/robotics:** telemetry
 
 ## Good next engineering tasks for Claude Code
-Done (Nov 2026): F´ deployment (native + aarch64 under QEMU), CCSDS dual basis, delivery-time sim, ThingsBoard live run, market checks, plus everything earlier.
-1. Autoroute the payload interface board (Freerouting needs approval to run here) and review by hand.
-2. Replace `PayloadSim` with real drivers: NB-IoT modem over UART, onboard pass predictor (port `forgestar/orbits.py` to C), X-band radio driver. Then run on a Raspberry Pi / STM32 dev board.
-3. Device firmware for re-send-until-acked (ACK frames exist in `forgestar/frames.py`, libforge and F´ `ackIn`); wire ACK uplink into the F´ topology via the uplink radio driver.
-4. F´ ground: install fprime-gds on Python ≤3.12 and command the deployment over TCP.
-5. Sandf multi-shell support so the live stack runs the 42+6 design; ITU filing parameters from it.
-
-ThingsBoard: verified live (3.8.1): provisioning, telemetry forwarding and the operations dashboard work (`docs/img/thingsboard-operations.png`). Widget FQNs in 3.8: `cards.entities_table`, `maps_v2.openstreetmap`, `time_series_chart`.
+Done (Nov 2026): signed commanding, safe mode, persistence + memory scrubbing, onboard pass predictor, device SDK, mission ops tool, software modem, production overlay, API hardening.
+Hardware-dependent (blocked until lab kit / bus partner / board exist): NB-IoT NTN base station on the payload SDR (OpenAirInterface), real radio + bus drivers, payload computer port, HIL and qualification tests.
+Still possible without hardware:
+1. CCSDS convolutional inner code (K=7, r=1/2) + Viterbi in `forgestar/fec.py` and libforge (~3 dB link margin).
+2. Command encryption (AES-GCM) on top of `CmdAuth`; key-upload command design with the bus partner.
+3. sandf multi-shell (42+6) so the live stack runs the Stage 3 design; ITU filing parameter sheet.
+4. Customer onboarding + billing service (from `/v1/report`); POPIA retention policies in TimescaleDB.
+5. Autoroute the payload interface board once Freerouting is approved.
 
 ## Conventions
 - Write in plain English with short sentences. Use tables for comparisons.

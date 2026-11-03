@@ -30,6 +30,8 @@ def main():
     ap.add_argument("--arch", choices=["native", "aarch64"], default="native")
     ap.add_argument("--seconds", type=float, default=6.0)
     ap.add_argument("--min-passes", type=int, default=3)
+    ap.add_argument("--predictor", action="store_true",
+                    help="drive passes from the onboard pass predictor (one satellite, 550 km, 45°, 120 s per tick)")
     a = ap.parse_args()
     plat = "Linux" if a.arch == "native" else "aarch64-linux"
     exe = ROOT / "flight/fprime/build-artifacts" / plat / "Payload/bin/Payload"
@@ -40,7 +42,9 @@ def main():
         cmd = ["qemu-aarch64", "-L", "/usr/aarch64-linux-gnu"] + cmd
     with tempfile.TemporaryDirectory() as td:
         raw = Path(td) / "downlink.raw"
-        env = dict(os.environ, FORGE_CYCLE_MS="20", FORGE_DOWNLINK=str(raw))
+        env = dict(os.environ, FORGE_CYCLE_MS="20", FORGE_DOWNLINK=str(raw), FORGE_STORE=str(Path(td) / "store.bin"))
+        if a.predictor:
+            env.update(FORGE_ELEMENTS="550,45,0,0", FORGE_SIM_S_PER_TICK="120")   # ~25 h of orbit in 15 s
         p = subprocess.Popen(cmd, cwd=td, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         time.sleep(a.seconds)
         p.send_signal(signal.SIGINT)
@@ -52,9 +56,14 @@ def main():
         frames, st = decode_stream(raw.read_bytes() if raw.exists() else b"")
     decoded = [decode(f) for f in frames]
     seqs = [r.payload["seq"] for f in decoded for r in f.records]
-    ok = st["failed"] == 0 and passes >= a.min_passes and seqs == list(range(len(seqs))) and len(seqs) > 0
-    print(f"{a.arch}: {passes} passes, {st['blocks']} link blocks, {len(seqs)} messages, "
-          f"failed blocks {st['failed']}, in order and complete: {seqs == list(range(len(seqs)))} -> {'OK' if ok else 'FAIL'}")
+    complete = seqs == list(range(len(seqs)))
+    ordered = all(x < y for x, y in zip(seqs, seqs[1:]))
+    overflow = "BufferFull" in log
+    # gaps are only acceptable when the onboard buffer reported overflow; order must always hold
+    ok = st["failed"] == 0 and passes >= a.min_passes and len(seqs) > 0 and ordered and (complete or overflow)
+    note = "complete" if complete else ("gaps from reported buffer overflow" if overflow else "MESSAGES LOST")
+    print(f"{a.arch}{' (pass predictor)' if a.predictor else ''}: {passes} passes, {st['blocks']} link blocks, {len(seqs)} messages, "
+          f"failed blocks {st['failed']}, in order: {ordered}, {note} -> {'OK' if ok else 'FAIL'}")
     return 0 if ok else 1
 
 

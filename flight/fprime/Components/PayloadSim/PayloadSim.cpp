@@ -4,6 +4,7 @@
 #include "Components/PayloadSim/PayloadSim.hpp"
 #include "FpConfig.hpp"
 #include "forge.h"
+#include <cstdlib>
 
 namespace ForgeSat {
 
@@ -45,12 +46,17 @@ void PayloadSim::schedIn_handler(FwIndexType portNum, U32 context) {
         }
     }
     // pass schedule: gateway in view for m_length out of every m_period ticks
-    const bool pass = (this->m_tick % this->m_period) >= (this->m_period - this->m_length);
+    // fixed demo schedule, unless the onboard pass predictor is in charge (FORGE_ELEMENTS set)
+    const bool pass = !std::getenv("FORGE_ELEMENTS") && (this->m_tick % this->m_period) >= (this->m_period - this->m_length);
     if (pass != this->m_pass) {
         this->m_pass = pass;
         if (this->isConnected_passOut_OutputPort(0)) {
             this->passOut_out(0, pass);
         }
+    }
+    if (this->isConnected_busPowerOut_OutputPort(0)) {
+        const bool dip = std::getenv("FORGE_BATT_DIP") && (this->m_tick % 120) >= 100;
+        this->busPowerOut_out(0, dip ? 6.4f : 7.4f);
     }
     this->m_tick++;
     this->tlmWrite_MessagesGenerated(this->m_generated);

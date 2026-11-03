@@ -1,0 +1,90 @@
+# Production overlay for the FORGE STAR platform (SA-hosted).
+#   cd ground && docker compose -f docker-compose.yml -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d
+# Differences from dev: no simulated devices/satellites; no database/Kafka ports on the host;
+# secrets required (no defaults); TLS in front of the API and ThingsBoard; nightly backups; limits and log rotation.
+name: forge-star
+
+x-logging: &logging
+  driver: json-file
+  options: {max-size: "20m", max-file: "5"}
+
+services:
+  timescaledb:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${PG_PASSWORD:?set PG_PASSWORD in deploy/.env.prod}
+    deploy: {resources: {limits: {memory: 4g}}}
+    restart: always
+    logging: *logging
+
+  kafka:
+    ports: !reset []
+    deploy: {resources: {limits: {memory: 2g}}}
+    restart: always
+    logging: *logging
+
+  ingest:
+    environment:
+      PG_DSN: postgresql://forge:${PG_PASSWORD:?}@timescaledb:5432/forgestar
+    restart: always
+    logging: *logging
+
+  gateway:
+    environment:
+      PG_DSN: postgresql://forge:${PG_PASSWORD:?}@timescaledb:5432/forgestar
+      GATEWAY_ID: ${GATEWAY_ID:-1}
+    restart: always
+    logging: *logging
+
+  api:
+    ports: !reset []                      # only reachable through Caddy (TLS)
+    environment:
+      PG_DSN: postgresql://forge:${PG_PASSWORD:?}@timescaledb:5432/forgestar
+      API_RATE_PER_MIN: ${API_RATE_PER_MIN:-120}
+    restart: always
+    logging: *logging
+
+  thingsboard:
+    ports: !override ["1883:1883"]       # MQTT for devices; web UI only through Caddy
+    profiles: !reset []
+    restart: always
+    logging: *logging
+
+  # simulated space segment and devices are development tools only
+  sandf:
+    profiles: ["sim"]
+  simulator:
+    profiles: ["sim"]
+
+  caddy:
+    image: caddy:2.8.4
+    ports: ["443:443", "80:80"]
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?set API_DOMAIN}
+      TB_DOMAIN: ${TB_DOMAIN:?set TB_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    depends_on: [api]
+    restart: always
+    logging: *logging
+
+  backup:
+    # nightly pg_dump, 14-day retention; copy /backups off-site (still within SA) with your storage tool
+    image: timescale/timescaledb:2.17.2-pg16
+    entrypoint: ["/bin/sh", "/backup.sh"]
+    environment:
+      PGPASSWORD: ${PG_PASSWORD:?}
+      KEEP_DAYS: ${BACKUP_KEEP_DAYS:-14}
+    volumes:
+      - ./deploy/backup.sh:/backup.sh:ro
+      - backups:/backups
+    depends_on:
+      timescaledb: {condition: service_healthy}
+    restart: always
+    logging: *logging
+
+volumes:
+  caddy-data: {}
+  backups: {}

@@ -18,12 +18,18 @@ class StoreForward : public StoreForwardComponentBase {
     //! Set the satellite id written into every downlink frame (call before start)
     void configure(U16 satId);
 
+    //! Persistent storage for the onboard store: loaded now, saved after each pass, every saveEvery ticks and on SF_SAVE
+    void configurePersistence(const char* path, U32 saveEvery);
+
   PRIVATE:
     void deviceIn_handler(FwIndexType portNum, U32 shortId, U32 tCreated, I32 latE5, I32 lonE5,
                           const Fw::StringBase& payload) override;
     void schedIn_handler(FwIndexType portNum, U32 context) override;
     void passIn_handler(FwIndexType portNum, bool inView) override;
     void ackIn_handler(FwIndexType portNum, Fw::Buffer& fwBuffer) override;
+    void modeIn_handler(FwIndexType portNum, bool safe) override;
+    void SF_SAVE_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;
+    void save();
     void startPass();
     void endPass();
     void SF_PASS_START_cmdHandler(FwOpcodeType opCode, U32 cmdSeq) override;
@@ -40,6 +46,11 @@ class StoreForward : public StoreForwardComponentBase {
     U32 m_passRecords;
     U32 m_ackedOnBoard;                       //!< since boot
     forge_ack_key_t m_ackKeys[512];
+    bool m_safe;
+    char m_path[128];
+    U32 m_saveEvery;
+    U32 m_ticks;
+    U8 m_img[FORGE_SF_CAPACITY * (FORGE_REC_HDR + FORGE_PAYLOAD_MAX) + 64];
 };
 
 }  // namespace ForgeSat

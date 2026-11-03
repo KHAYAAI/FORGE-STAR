@@ -66,6 +66,26 @@ int main(int argc, char **argv) {
     CHECK(forge_sf_apply_acks(&sf, keys, 2) == 2 && sf.count == 1 && sf.rec[sf.head].short_id == VEC_RECS[1].sid,
           "acked records dropped on board, others kept in order");
 
+    /* integrity: a bit flip in stored memory is caught and the record is never sent */
+    forge_sf_init(&sf, 3);
+    for (int i = 0; i < VEC_NREC; i++) forge_sf_store(&sf, &r3[i]);
+    sf.rec[(sf.head + 1) % FORGE_SF_CAPACITY].payload[2] ^= 0x10;        /* simulated single-event upset */
+    CHECK(forge_sf_scrub(&sf) == 1 && sf.count == 2 && sf.corrupted == 1, "corrupted record detected and discarded");
+
+    /* persistence: save, wipe, load -> identical downlink */
+    static uint8_t img[FORGE_SF_CAPACITY * (FORGE_REC_HDR + FORGE_PAYLOAD_MAX) + 64];
+    forge_sf_init(&sf, 9); sf.seq = 41;
+    for (int i = 0; i < VEC_NREC; i++) forge_sf_store(&sf, &r3[i]);
+    size_t ilen = forge_sf_save(&sf, img, sizeof img);
+    static forge_sf_t restored;
+    CHECK(ilen > 0 && forge_sf_load(&restored, img, ilen) == 1 && restored.count == VEC_NREC && restored.seq == 41 && restored.sat_id == 9,
+          "store survives save/load (reboot)");
+    static uint8_t a[FORGE_LINK_MAX], b[FORGE_LINK_MAX]; uint32_t sa, sb;
+    size_t la = forge_sf_next_link_block(&sf, 1u, a, sizeof a, &sa), lb = forge_sf_next_link_block(&restored, 1u, b, sizeof b, &sb);
+    CHECK(la == lb && memcmp(a, b, la) == 0, "restored store downlinks byte-identical blocks");
+    img[30] ^= 1;
+    CHECK(forge_sf_load(&restored, img, ilen) == 0, "corrupted save image rejected");
+
     printf(fails ? "\n%d FAILED\n" : "\nall passed\n", fails);
     return fails ? 1 : 0;
 }

@@ -15,6 +15,9 @@ module ForgeSat {
     @ Gateway pass state to StoreForward
     output port passOut: PassState
 
+    @ Simulated bus battery voltage (FORGE_BATT_DIP=1 adds a low-voltage dip every 120 s)
+    output port busPowerOut: BusPower
+
     @ Link blocks from StoreForward (what the downlink radio would transmit)
     sync input port linkIn: Fw.BufferSend
 

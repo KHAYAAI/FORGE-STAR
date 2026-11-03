@@ -133,10 +133,74 @@ size_t forge_link_encode(uint8_t *out, size_t cap, const uint8_t *frame, size_t 
 /* ---------------- store-and-forward ring buffer ---------------- */
 void forge_sf_init(forge_sf_t *sf, uint16_t sat_id) { memset(sf, 0, sizeof *sf); sf->sat_id = sat_id; }
 
+static uint32_t rec_crc(const forge_record_t *r) {
+    uint8_t hdr[18];
+    put32(hdr, r->short_id); put32(hdr + 4, r->t_created); put32(hdr + 8, (uint32_t)r->lat_e5);
+    put32(hdr + 12, (uint32_t)r->lon_e5); put16(hdr + 16, r->payload_len);
+    uint32_t a = forge_crc32(hdr, sizeof hdr);
+    uint32_t b = forge_crc32(r->payload, r->payload_len <= FORGE_PAYLOAD_MAX ? r->payload_len : 0);
+    return a ^ (b * 0x9E3779B1u);
+}
+
 int forge_sf_store(forge_sf_t *sf, const forge_record_t *r) {
     if (sf->count >= FORGE_SF_CAPACITY || r->payload_len > FORGE_PAYLOAD_MAX) { sf->dropped++; return 0; }
-    sf->rec[(sf->head + sf->count) % FORGE_SF_CAPACITY] = *r;
+    forge_record_t *dst = &sf->rec[(sf->head + sf->count) % FORGE_SF_CAPACITY];
+    *dst = *r;
+    dst->crc = rec_crc(dst);
     sf->count++;
+    return 1;
+}
+
+uint32_t forge_sf_scrub(forge_sf_t *sf) {
+    uint32_t kept = 0, bad = 0;
+    for (uint32_t i = 0; i < sf->count; i++) {
+        forge_record_t *r = &sf->rec[(sf->head + i) % FORGE_SF_CAPACITY];
+        if (r->payload_len > FORGE_PAYLOAD_MAX || r->crc != rec_crc(r)) { bad++; continue; }
+        if (kept != i) sf->rec[(sf->head + kept) % FORGE_SF_CAPACITY] = *r;
+        kept++;
+    }
+    sf->count = kept; sf->corrupted += bad;
+    return bad;
+}
+
+#define SF_IMG_HDR 18u
+#define SF_IMG_REC (FORGE_REC_HDR + FORGE_PAYLOAD_MAX)
+
+size_t forge_sf_save(const forge_sf_t *sf, uint8_t *out, size_t cap) {
+    size_t need = SF_IMG_HDR + (size_t)sf->count * SF_IMG_REC + 4u;
+    if (cap < need) return 0;
+    memcpy(out, "FSF1", 4); put32(out + 4, sf->count); put32(out + 8, sf->seq); put32(out + 12, sf->dropped);
+    put16(out + 16, sf->sat_id);
+    uint8_t *p = out + SF_IMG_HDR;
+    for (uint32_t i = 0; i < sf->count; i++, p += SF_IMG_REC) {
+        const forge_record_t *r = &sf->rec[(sf->head + i) % FORGE_SF_CAPACITY];
+        memset(p, 0, SF_IMG_REC);
+        put32(p, r->short_id); put32(p + 4, r->t_created); put32(p + 8, (uint32_t)r->lat_e5);
+        put32(p + 12, (uint32_t)r->lon_e5); put16(p + 16, r->payload_len);
+        memcpy(p + 18, r->payload, r->payload_len <= FORGE_PAYLOAD_MAX ? r->payload_len : 0);
+    }
+    put32(p, forge_crc32(out, (size_t)(p - out)));
+    return need;
+}
+
+static uint32_t rd32(const uint8_t *p) { return (uint32_t)p[0] << 24 | (uint32_t)p[1] << 16 | (uint32_t)p[2] << 8 | p[3]; }
+
+int forge_sf_load(forge_sf_t *sf, const uint8_t *img, size_t len) {
+    if (len < SF_IMG_HDR + 4u || memcmp(img, "FSF1", 4) != 0) return 0;
+    uint32_t n = rd32(img + 4);
+    if (n > FORGE_SF_CAPACITY || len != SF_IMG_HDR + (size_t)n * SF_IMG_REC + 4u) return 0;
+    if (forge_crc32(img, len - 4) != rd32(img + len - 4)) return 0;
+    forge_sf_init(sf, (uint16_t)((img[16] << 8) | img[17]));
+    sf->seq = rd32(img + 8); sf->dropped = rd32(img + 12);
+    const uint8_t *p = img + SF_IMG_HDR;
+    for (uint32_t i = 0; i < n; i++, p += SF_IMG_REC) {
+        forge_record_t r; memset(&r, 0, sizeof r);
+        r.short_id = rd32(p); r.t_created = rd32(p + 4); r.lat_e5 = (int32_t)rd32(p + 8); r.lon_e5 = (int32_t)rd32(p + 12);
+        r.payload_len = (uint16_t)((p[16] << 8) | p[17]);
+        if (r.payload_len > FORGE_PAYLOAD_MAX) return 0;
+        memcpy(r.payload, p + 18, r.payload_len);
+        forge_sf_store(sf, &r);
+    }
     return 1;
 }
 
@@ -144,6 +208,7 @@ size_t forge_sf_next_link_block(forge_sf_t *sf, uint32_t t_dl, uint8_t *out, siz
     static uint8_t frame[FORGE_FRAME_MAX];
     static forge_record_t batch[64];
     if (sent) *sent = 0;
+    forge_sf_scrub(sf);                    /* never send a record that was damaged in memory */
     if (sf->count == 0) return 0;
     size_t n = sf->count < 64 ? sf->count : 64;
     for (size_t i = 0; i < n; i++) batch[i] = sf->rec[(sf->head + i) % FORGE_SF_CAPACITY];

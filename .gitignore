@@ -13,3 +13,4 @@ hardware/build/
 *.erc
 /*.log
 flight/fprime/build-artifacts/
+ground/deploy/.env.prod

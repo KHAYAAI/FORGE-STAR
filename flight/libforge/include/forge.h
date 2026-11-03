@@ -33,6 +33,7 @@ typedef struct {
     int32_t  lon_e5;        /* longitude x 1e5 */
     uint16_t payload_len;
     uint8_t  payload[FORGE_PAYLOAD_MAX];  /* compact JSON (CBOR later) */
+    uint32_t crc;                         /* integrity check while stored (single-event upsets); set by forge_sf_store */
 } forge_record_t;
 
 uint32_t forge_crc32(const uint8_t *data, size_t len);
@@ -63,6 +64,7 @@ size_t forge_link_encode(uint8_t *out, size_t out_cap, const uint8_t *frame, siz
 typedef struct {
     forge_record_t rec[FORGE_SF_CAPACITY];
     uint32_t head, count, dropped;
+    uint32_t corrupted;   /* records found damaged in memory and discarded (never sent down wrong) */
     uint32_t seq;         /* next frame sequence number */
     uint16_t sat_id;
 } forge_sf_t;
@@ -74,6 +76,16 @@ int    forge_sf_store(forge_sf_t *sf, const forge_record_t *r);
  * Returns link-block bytes written (0 when empty); records sent are removed. */
 size_t forge_sf_next_link_block(forge_sf_t *sf, uint32_t t_downlink, uint8_t *out, size_t out_cap,
                                 uint32_t *records_sent);
+
+/* Check every stored record's CRC and discard damaged ones. Returns how many were discarded.
+ * Call periodically (memory scrubbing); forge_sf_next_link_block also checks before sending. */
+uint32_t forge_sf_scrub(forge_sf_t *sf);
+
+/* Persistence: serialise the store to bytes (to survive a reboot) and load it back.
+ * Image: "FSF1" | u32 count | u32 seq | u32 dropped | u16 sat_id | records... | u32 CRC-32.
+ * save returns bytes written (0 if out_cap is too small); load returns 1 on success, 0 if the image is invalid. */
+size_t forge_sf_save(const forge_sf_t *sf, uint8_t *out, size_t out_cap);
+int    forge_sf_load(forge_sf_t *sf, const uint8_t *img, size_t len);
 
 /* Remove stored records that the ground has acked (they would only be duplicates).
  * Returns how many were removed. Order of the remaining records is kept. */

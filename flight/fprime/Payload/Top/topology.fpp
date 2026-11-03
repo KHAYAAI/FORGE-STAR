@@ -43,6 +43,9 @@ module Payload {
     instance systemResources
     instance storeForward
     instance payloadSim
+    instance cmdAuth
+    instance modeManager
+    instance passPredictor
 
     # ----------------------------------------------------------------------
     # Pattern graph specifiers
@@ -103,6 +106,8 @@ module Payload {
       rateGroup1.RateGroupMemberOut[2] -> systemResources.run
       rateGroup1.RateGroupMemberOut[3] -> payloadSim.schedIn
       rateGroup1.RateGroupMemberOut[4] -> storeForward.schedIn
+      rateGroup1.RateGroupMemberOut[5] -> modeManager.schedIn
+      rateGroup1.RateGroupMemberOut[6] -> passPredictor.schedIn
 
       # Rate group 2
       rateGroupDriver.CycleOut[Ports_RateGroups.rateGroup2] -> rateGroup2.CycleIn
@@ -127,9 +132,12 @@ module Payload {
       comStub.comDataOut -> deframer.framedIn
 
       deframer.framedDeallocate -> bufferManager.bufferSendIn
-      deframer.comOut -> cmdDisp.seqCmdBuff
+      # every uplinked command is authenticated before the dispatcher sees it
+      deframer.comOut -> cmdAuth.comIn
+      cmdAuth.comOut -> cmdDisp.seqCmdBuff
 
-      cmdDisp.seqCmdStatus -> deframer.cmdResponseIn
+      cmdDisp.seqCmdStatus -> cmdAuth.cmdResponseIn
+      cmdAuth.cmdResponseOut -> deframer.cmdResponseIn
 
       deframer.bufferAllocate -> bufferManager.bufferGetCallee
       deframer.bufferOut -> fileUplink.bufferSendIn
@@ -140,10 +148,14 @@ module Payload {
     connections Payload {
       # NB-IoT receiver (simulated) -> store-and-forward
       payloadSim.deviceOut -> storeForward.deviceIn
-      # onboard pass predictor (simulated) -> store-and-forward
+      # gateway passes: onboard predictor (flight), or PayloadSim's fixed schedule (ground demos)
+      passPredictor.passOut -> storeForward.passIn
       payloadSim.passOut -> storeForward.passIn
       # store-and-forward -> downlink radio (simulated: writes link blocks to a file)
       storeForward.linkOut -> payloadSim.linkIn
+      # bus power (simulated) -> mode manager -> payload safe mode
+      payloadSim.busPowerOut -> modeManager.busPowerIn
+      modeManager.modeOut -> storeForward.modeIn
     }
 
   }

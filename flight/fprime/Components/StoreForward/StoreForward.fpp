@@ -12,6 +12,12 @@ module ForgeSat {
   @ Gateway pass state from the onboard pass predictor (true = gateway in view)
   port PassState(inView: bool)
 
+  @ Payload operating mode from the mode manager (safe = no RF transmission)
+  port Mode(safe: bool)
+
+  @ Bus power report (battery voltage)
+  port BusPower(volts: F32)
+
   @ Store-and-forward payload: buffers device messages on board and, during a
   @ gateway pass, sends them down as forgestar frames v1 wrapped in RS(255,223) link blocks.
   @ The core is flight/libforge (C99), shared byte-for-byte with the Python ground segment.
@@ -35,6 +41,12 @@ module ForgeSat {
     @ Returns ackIn buffers to their owner once processed
     output port ackReturn: Fw.BufferSend
 
+    @ Mode changes from the mode manager
+    async input port modeIn: Mode
+
+    @ Save the onboard store to persistent storage now
+    async command SF_SAVE opcode 0x03
+
     @ Start a downlink pass (gateway in view)
     async command SF_PASS_START opcode 0x00
 
@@ -56,6 +68,12 @@ module ForgeSat {
     @ Stored messages dropped because the ground had already acked them (duplicates avoided)
     telemetry AckedOnBoard: U32
 
+    @ Stored records found damaged in memory and discarded
+    telemetry Corrupted: U32
+
+    @ Payload in safe mode (no transmission)
+    telemetry SafeMode: bool
+
     @ A downlink pass started
     event PassStarted(stored: U32) severity activity high format "Downlink pass started, {} messages on board"
 
@@ -70,6 +88,18 @@ module ForgeSat {
 
     @ An uplinked ACK frame failed its checks
     event BadAck severity warning low format "Uplinked ACK frame rejected (CRC or format)"
+
+    @ Mode changed (safe = transmitter inhibited)
+    event ModeChanged(safe: bool) severity activity high format "Store-and-forward safe mode: {}"
+
+    @ Store restored from persistent storage at boot
+    event Restored(records: U32) severity activity high format "Restored {} stored messages from persistent storage"
+
+    @ Store saved to persistent storage
+    event Saved(records: U32, bytes: U32) severity activity low format "Saved {} messages ({} bytes)"
+
+    @ Damaged records discarded by memory scrubbing
+    event Scrubbed(discarded: U32) severity warning low format "Memory scrub discarded {} damaged records"
 
     @ Buffer cleared by command
     event Cleared(discarded: U32) severity activity high format "Store-and-forward buffer cleared, {} messages discarded"

@@ -1,0 +1,16 @@
+# TLS termination (automatic certificates) for the customer API and ThingsBoard.
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_DOMAIN} {
+	encode gzip
+	header -Server
+	reverse_proxy api:8000
+}
+
+{$TB_DOMAIN} {
+	encode gzip
+	header -Server
+	reverse_proxy thingsboard:9090
+}

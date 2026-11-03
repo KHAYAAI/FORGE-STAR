@@ -1,3 +1,4 @@
+#include <cstdio>
 #include <cstdlib>
 // ======================================================================
 // \title  PayloadTopology.cpp
@@ -110,6 +111,24 @@ void configureTopology() {
 
     // FORGE STAR payload: satellite id 7; simulated hardware writes link blocks to FORGE_DOWNLINK.
     storeForward.configure(7);
+    // Onboard store survives reboots: restored now, saved after each pass and every 60 s
+    const char* store = std::getenv("FORGE_STORE");
+    storeForward.configurePersistence(store ? store : "payload_store.bin", 60);
+    // Pass predictor: SA gateways preloaded; elements come by command (PP_SET_ELEMENTS) or, in ground
+    // tests, from FORGE_ELEMENTS="alt_km,inc_deg,raan_deg,u_deg" on a clock of FORGE_SIM_S_PER_TICK seconds/tick.
+    passPredictor.setGateway(0, -25.89, 27.69, 10.0);   // Hartebeesthoek
+    passPredictor.setGateway(1, -33.93, 18.42, 10.0);   // Cape Town
+    const char* sim = std::getenv("FORGE_SIM_S_PER_TICK");
+    passPredictor.configure(sim ? std::atof(sim) : 0.0);
+    if (const char* e = std::getenv("FORGE_ELEMENTS")) {
+        double alt = 550, inc = 45, raan = 0, u = 0;
+        std::sscanf(e, "%lf,%lf,%lf,%lf", &alt, &inc, &raan, &u);
+        const double d = 3.14159265358979323846 / 180.0;
+        forge_elements_t el = {0.0, alt, inc * d, raan * d, u * d, 0.0};
+        passPredictor.setElements(el);
+    }
+    // Command authentication key (ground/test builds: FORGE_CMD_KEY hex; flight: protected storage)
+    cmdAuth.configureFromHexEnv("FORGE_CMD_KEY");
     const char* downlink = std::getenv("FORGE_DOWNLINK");
     payloadSim.configure(downlink ? downlink : "payload_downlink.raw", 2, 30, 8);
 

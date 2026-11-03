@@ -61,3 +61,25 @@ def test_sla_and_report(client):
     rep = c.get("/v1/report", headers=h, params={"month": NOW.strftime("%Y-%m")}).json()
     assert rep["active_devices"] == 1 and rep["amount_usd"] == api.PRICE_PER_DEVICE_MONTH
     assert c.get("/v1/report", headers=h, params={"month": "2026-13x"}).status_code == 422
+
+
+def test_rate_limit_security_headers_audit_metrics(client, monkeypatch):
+    c, k = client
+    monkeypatch.setattr(api, "RATE_PER_MIN", 5); api._buckets.clear()
+    h = {"X-API-Key": k["Mine"]}
+    codes = [c.get("/v1/devices", headers=h).status_code for _ in range(8)]
+    assert codes[:5] == [200] * 5 and 429 in codes[5:]
+    r = c.get("/health")
+    assert r.headers["X-Content-Type-Options"] == "nosniff" and r.headers["X-Frame-Options"] == "DENY"
+    repo = api.app.dependency_overrides[api.get_repo]()
+    m = c.get("/metrics").text
+    assert 'route="/v1/devices",status="200"' in m and 'status="429"' in m
+    api._buckets.clear()
+
+
+def test_revoked_key_is_refused(client):
+    c, k = client
+    repo = api.app.dependency_overrides[api.get_repo]()
+    assert c.get("/v1/devices", headers={"X-API-Key": k["DFFE"]}).status_code == 200
+    assert repo.revoke_key(k["DFFE"])
+    assert c.get("/v1/devices", headers={"X-API-Key": k["DFFE"]}).status_code == 401

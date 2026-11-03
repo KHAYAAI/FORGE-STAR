@@ -56,14 +56,18 @@ In **Stage 0**, before our own satellites fly, the same platform carries traffic
 
 | Layer | What it does | Where |
 |---|---|---|
-| **Flight software** | NASA F´ deployment (`Payload`) with the `StoreForward` component. Runs on x86 and 64-bit ARM. | [`flight/fprime/`](flight/fprime) |
-| **Flight core** | Portable C99, no dynamic memory: store-and-forward buffer, frames, acks, Reed–Solomon encoding. Byte-identical to the ground code. | [`flight/libforge/`](flight/libforge) |
+| **Flight software** | NASA F´ deployment (`Payload`): store-and-forward, signed-command authentication, safe mode, onboard pass prediction, persistence. Runs on x86 and 64-bit ARM. | [`flight/fprime/`](flight/fprime) |
+| **Flight core** | Portable C99, no dynamic memory: store-and-forward buffer (CRC-checked, survives reboot), frames, acks, Reed–Solomon, HMAC command auth, pass predictor. Byte-identical to the ground code. | [`flight/libforge/`](flight/libforge) |
+| **Device SDK** | C99 library for customer devices: queue, re-send until acked, expiry | [`flight/libforge/include/forge_device.h`](flight/libforge/include/forge_device.h) |
+| **Mission operations** | Signed commanding and telemetry/event decoding for the flight software; procedures | [`ground/ops/`](ground/ops), [`docs/operations/`](docs/operations) |
+| **Software modem** | BPSK receive chain from IQ samples (Doppler, timing, phase) to link blocks | [`forgestar/modem.py`](forgestar/modem.py) |
 | **Link layer** | RS(255,223) with CCSDS parameters and dual basis, CCSDS randomiser, sync marker. Corrects up to 16 bad bytes per block. | [`forgestar/fec.py`](forgestar/fec.py) |
 | **Frames** | Store-and-forward data frames and ACK frames shared by satellite and ground | [`forgestar/frames.py`](forgestar/frames.py) |
 | **Gateway** | Decodes downlinks (Kafka, capture files, SatNOGS Network), removes duplicates, sends acks | [`ground/gateway/`](ground/gateway) |
 | **Data platform** | Kafka → TimescaleDB, ingest, delivery-time (SLA) views | [`ground/`](ground) |
 | **Dashboards** | ThingsBoard provisioning: devices plus an operations dashboard | [`ground/thingsboard/`](ground/thingsboard) |
-| **Customer API** | FastAPI with per-customer keys: devices, messages, SLA, monthly usage | [`ground/api/`](ground/api) |
+| **Customer API** | FastAPI with per-customer keys: devices, messages, SLA, monthly usage; rate limits, audit log, metrics | [`ground/api/`](ground/api) |
+| **Production deployment** | TLS, backups, no exposed data ports, required secrets | [`ground/deploy/`](ground/deploy) |
 | **Simulated space segment** | Runs a constellation on a sped-up clock, so the whole platform can be tested without satellites | [`ground/sandf/`](ground/sandf) |
 | **Constellation design** | Orbits with J2 (checked against SGP4), coverage, link budget, antenna options, delivery time | [`sim/`](sim), [`forgestar/`](forgestar) |
 | **Hardware** | In-house PCB pipeline: circuit as code (SKiDL) → KiCad → Freerouting → fab files. Board 1: payload interface board. | [`hardware/`](hardware) |
@@ -104,6 +108,8 @@ fprime-util generate && fprime-util build && fprime-util check     # build + uni
 cd ../.. && python3 flight/run_payload.py                           # run it, decode its downlink on the ground
 ```
 
+Command it (signed) from the ground: `python3 ground/ops/forge_ops.py --dict flight/fprime/build-artifacts/Linux/Payload/dict/PayloadTopologyDictionary.json --port 50000 --key <hex> --cmd Payload.cmdDisp.CMD_NO_OP`, then start the flight binary with `FORGE_CMD_KEY=<hex>` and `-a 127.0.0.1 -p 50000`.
+
 For 64-bit ARM, use `fprime-util generate aarch64-linux && fprime-util build aarch64-linux`, then `python3 flight/run_payload.py --arch aarch64` (runs under QEMU).
 
 **Analysis and documents:**
@@ -134,6 +140,6 @@ CI runs all of this on every push: the Python tests and analysis, the platform i
 
 ## Status
 
-The software and ground platform are at TRL 4–5. Payload hardware, the bus partner, spectrum licensing, funding and customers are the work still ahead. See [`docs/LAUNCH_READINESS.md`](docs/LAUNCH_READINESS.md) for the scorecard, critical path and blockers.
+The software and ground platform are at TRL 4–5. Everything that can be built without hardware is in place; the remaining software (payload radio base station, real drivers, bus integration) needs the lab kit and bus partner. Payload hardware, the bus partner, spectrum licensing, funding and customers are the work still ahead. See [`docs/LAUNCH_READINESS.md`](docs/LAUNCH_READINESS.md) for the scorecard, critical path and blockers.
 
 Project context for Claude Code is in [`CLAUDE.md`](CLAUDE.md).

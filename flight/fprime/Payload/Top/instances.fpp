@@ -132,4 +132,10 @@ module Payload {
 
   instance payloadSim: ForgeSat.PayloadSim base id 0x5100
 
+  instance cmdAuth: ForgeSat.CmdAuth base id 0x5200
+
+  instance modeManager: ForgeSat.ModeManager base id 0x5300
+
+  instance passPredictor: ForgeSat.PassPredictor base id 0x5400
+
 }
