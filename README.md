@@ -14,7 +14,7 @@ FORGE STAR starts with satellite IoT, maritime AIS and sovereign data relay, not
 
 | Document | For | What it is |
 |---|---|---|
-| **[Technical and investor brief (PDF)](output/FORGE_STAR_Brief.pdf)** | Investors, counsel, engineers, partners, due diligence | One brief with a section for each reader: case, market, financials, regulation, architecture, RF design, flight software, ground platform, hardware plan, evidence, path to launch, risks, sources |
+| **[Technical and investor brief (PDF)](output/FORGE_STAR_Brief.pdf)** | Investors, counsel, engineers, partners, due diligence | One brief with a section for each reader: case, market, financials, regulation, architecture, RF design, flight software, ground platform, hardware plan, evidence, path to launch, risks, where FORGE STAR reaches (global coverage map, first export markets), sources |
 | [Strategy (PDF)](output/FORGE_STAR_Strategy.pdf) · [source](docs/strategy.md) | Founders, board | The full strategy with every analysis check |
 | [Launch readiness](docs/LAUNCH_READINESS.md) | Everyone | Scorecard, TRL, critical path, blockers (generated) |
 | [Verification register](docs/verification/VERIFY.md) | Counsel, engineers | Every claim, vendor figure and radio value still to confirm, with sources |
@@ -26,7 +26,7 @@ Both PDFs are built from markdown in `docs/`:
 ```bash
 python3 scripts/build_pdf.py                                        # strategy
 python3 scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf \
-  --subtitle "Technical and investor brief" --label "Brief  ·  November 2026  ·  Confidential"
+  --subtitle "Technical and investor brief" --label "Brief v1.1  ·  November 2026  ·  Confidential"
 ```
 
 ---
@@ -139,6 +139,7 @@ For 64-bit ARM, use `fprime-util generate aarch64-linux && fprime-util build aar
 
 ```bash
 python3 sim/equatorial_study.py          # Stage 3 constellation and gateway design
+python3 sim/coverage_map.py [--stage4]   # global coverage map -> docs/img/coverage-stage3.png
 python3 model/financial_model.py         # financial model and stress tests
 python3 scripts/launch_readiness.py      # docs/LAUNCH_READINESS.md
 python3 scripts/build_pdf.py             # output/FORGE_STAR_Strategy.pdf
@@ -162,6 +163,8 @@ CI runs all of this on every push: the Python tests and analysis, the platform i
 | **Delivery measured on the Stage 3 design (live run)** | 95% of satellite messages within 9 minutes |
 | **Link margin** | Decodes at Eb/N0 ≈ 2.5 dB with CCSDS RS + convolutional coding |
 | **First payload in orbit** | ~Apr 2029 on the fast track (hosted payload); own satellite ~Jun 2029 |
+
+![Where FORGE STAR reaches: Stage 3 coverage](docs/img/coverage-stage3.png)
 
 ## Hardware: build, buy, bridge
 

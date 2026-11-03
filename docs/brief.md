@@ -27,7 +27,8 @@ FORGE STAR is a South African company building a locally owned low-Earth-orbit n
 | **10 Evidence and maturity** | Technical due diligence | Tests, CI, TRL, what is verified |
 | **11 Path to launch** | Everyone | Timeline, critical path, next 90 days |
 | **12 Risks** | Investors, board | What could break the plan |
-| **13 Sources and caveats** | Everyone | What was checked, and what still needs confirming |
+| **13 Where FORGE STAR reaches** | Investors, partners, business development | Global coverage map, service by region, first export markets |
+| **14 Sources and caveats** | Everyone | What was checked, and what still needs confirming |
 
 ---
 
@@ -405,7 +406,60 @@ heypcb.ai designs the circuit boards (schematics, routing, Gerbers, BOMs, KiCad 
 
 ---
 
-## 13 · Sources and caveats
+## 13 · Where FORGE STAR reaches
+### The African network is a near-global network
+
+@reader Investors, partners and business development
+
+The Earth rotates under every orbit, so the 45° and 10° shells pass over every longitude, and a satellite at 550 km is visible from beyond its inclination. The same 48 satellites designed for Africa therefore fly over a band from about **55°S to 55°N**: about **81% of the Earth's surface** sees a satellite at least a quarter of the time. Where a satellite can also see one of the African gateways at the same moment, service is **real time**; everywhere else it is **store-and-forward** until more gateways are added.
+
+![Stage 3 coverage: real time across Africa and Madagascar (orange), store-and-forward across the 55°S–55°N band (blue)](docs/img/coverage-stage3.png)
+
+![Stage 4 (150 satellites): satellites overhead 85–100% of the time across most of the band](docs/img/coverage-stage4.png)
+
+#### Coverage by latitude band (share of time a satellite is overhead)
+
+| Latitude | Stage 3 (48) | Stage 4 (150) | Examples |
+|---|---|---|---|
+| **35–45° N and S** | 63–65% | 100% | Cape Town, Buenos Aires, Sydney, Auckland, Madrid, Rome, Tokyo, Casablanca |
+| **15–25°** | 44–46% | 86–94% | Johannesburg, São Paulo, Madagascar, Riyadh, Dubai, Mumbai, Mexico City |
+| **0–15°** | 44–47% | 94–100% | Lagos, Nairobi, Kinshasa, Jakarta, Manila, Lima |
+| **About 55°** | 14% | 40% | Southern Argentina, northern UK |
+| **Above about 60°** | 0% | 0% | Moscow and north, Arctic, Antarctica |
+
+#### Service by region (Stage 3)
+
+| Region | Satellite overhead | Real time (African gateways) | 95% delivery, African gateways only | With 5 more gateways |
+|---|---|---|---|---|
+| **Southern, East, Central, West Africa** | 42–67% | Almost all of it | 8–26 min | — |
+| **Madagascar** | 46% | 46% | Minutes | — |
+| **Sudan, Senegal** | 42–44% | 18–33% | Under ~1 h | — |
+| **Gulf and Middle East** (Riyadh, Dubai, Cairo) | 45–57% | 4–13% | ~1–2 h | Regional gateway needed |
+| **South America** (São Paulo, Buenos Aires, Lima) | 42–65% | 0% | ~40+ min | São Paulo ~10 min (Brazil gateway) |
+| **South Asia** (Mumbai, Dhaka) | 45–46% | 0% | ~2 h | Mumbai ~19 min (India gateway) |
+| **South-East Asia** (Jakarta, Manila, Malacca Strait) | 41–45% | 0% | ~1.5–2 h | Jakarta ~12 min, Malacca ~10 min (Singapore gateway) |
+| **Australia, New Zealand** | 61–66% | 0% | ~75–85 min | Perth ~6 min; Sydney 63 min (needs an east-coast gateway) |
+| **Mexico, Caribbean, Panama** | 47% | 0% | ~45–75 min | Panama ~29 min (Panama gateway) |
+
+"5 more gateways" = Brazil, Panama, Singapore, Western Australia and India (leased passes, roughly $60k a year each, illustrative). Coverage is not permission: each country needs landing rights, gateway licences and spectrum coordination.
+
+#### First export markets
+
+| # | Market | Why first | What it needs |
+|---|---|---|---|
+| **1** | **SADC states** (Namibia, Botswana, Zambia, Mozambique, Tanzania) | Real-time coverage already; regional regulatory ties; logistics corridors and mining; "constellation-in-a-box" co-financing partners | Landing rights per state; Walvis Bay, Lusaka, Maputo, Dar gateways |
+| **2** | **Indian Ocean maritime** (Mauritius, Madagascar, Seychelles, Mozambique Channel) | Real time over Madagascar and Mauritius; fisheries enforcement and shipping on the Cape route; sells AIS data, not consumer service | Mauritius gateway; fisheries and port-authority contracts |
+| **3** | **East and West Africa** (Kenya, Nigeria, Senegal, Ghana) | Real time via Malindi and Lagos gateways; large agriculture, energy and logistics IoT markets | Landing rights; partner gateways in country |
+| **4** | **Global maritime AIS data** (shipping insurers, flag states, port operators) | The Indian Ocean, Malacca, Suez approaches, South Atlantic and Panama lie inside the band on Stage 3 satellites; data products sold from SA | AIS data licensing; Singapore and Panama gateways for low latency |
+| **5** | **Brazil and the Southern Cone** (agriculture and mining IoT) | Strong coverage at 23–35°S; large farm and mining IoT demand; a neutral, non-aligned alternative | ANATEL authorisation; Brazil gateway; in-country data landing |
+
+Outside Africa the pitch changes from "sovereign for South Africa" to **neutral, non-aligned and landed in country**: each regional gateway lands customers' data in their own jurisdiction.
+
+*Maps and figures from `sim/coverage_map.py`, `sim/latency_sim.py` and the global gateway study (first-order: circular orbits, 16° user mask, 2-day averages). Regulatory steps per market to confirm with counsel.*
+
+---
+
+## 14 · Sources and caveats
 ### What was checked, and what still needs confirming
 
 @reader Everyone

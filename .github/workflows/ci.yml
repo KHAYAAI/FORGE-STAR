@@ -29,7 +29,7 @@ jobs:
       - name: Strategy PDF and technical/investor brief
         run: |
           python scripts/build_pdf.py
-          python scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf --subtitle "Technical and investor brief" --tagline "Investors  ·  Counsel  ·  Systems & RF  ·  Software  ·  Hardware  ·  Due diligence" --label "Brief  ·  November 2026  ·  Confidential" --title "FORGE STAR — Technical and Investor Brief"
+          python scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf --subtitle "Technical and investor brief" --tagline "Investors  ·  Counsel  ·  Systems & RF  ·  Software  ·  Hardware  ·  Due diligence" --label "Brief v1.1  ·  November 2026  ·  Confidential" --title "FORGE STAR — Technical and Investor Brief"
       - uses: actions/upload-artifact@v4
         with:
           name: forge-star-outputs
