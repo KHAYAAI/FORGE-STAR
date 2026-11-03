@@ -16,6 +16,7 @@ workstreams:
   lab: "Proof in the lab"
   orbit: "Proof in orbit"
   service: "Early service and operations"
+  hardware: "Payload hardware and bridging partners"
 
 items:
   # --- Permission to transmit ---
@@ -56,9 +57,18 @@ items:
 
   # --- Proof in orbit ---
   - {id: R1, ws: orbit, title: "Bus partner quotes and MoU (Dragonfly Aerospace / CubeSpace)", start: 1, months: 4, owner: TBD, status: todo}
-  - {id: R2, ws: orbit, title: "Hosted-payload slot contracted (~$350k)", start: 8, months: 3, depends: [R1, F2, L3], owner: TBD, status: todo}
+  - {id: R2, ws: orbit, title: "Hosted-payload slot contracted (~$350k)", start: 8, months: 3, depends: [R1, F2, L3, H7], owner: TBD, status: todo}
   - {id: R3, ws: orbit, title: "Hosted payload built, qualified, launched, commissioned", start: 11, months: 12, depends: [R2], owner: TBD, status: todo}
   - {id: R4, ws: orbit, title: "Own 6U–12U demonstrator launched; store-and-forward in orbit", start: 18, months: 12, depends: [R3, S6], owner: TBD, status: todo}
+
+  # --- Payload hardware and bridging partners (see docs/brief.md and register V1–V7) ---
+  - {id: H1, ws: hardware, title: "Payload interface board to heypcb.ai: route, fab 5, bring up with libforge", start: 0, months: 2, owner: TBD, status: todo}
+  - {id: H2, ws: hardware, title: "Hosted-payload RFQ to a host platform (Loft Orbital or D-Orbit) alongside the bus RFQ", start: 1, months: 3, owner: TBD, status: todo, reverify: true}
+  - {id: H3, ws: hardware, title: "RF vendor quotes: S-band SDR + PA, X-band transmitter, S-band patch (EnduroSat, Alén, IQ Spacecom)", start: 1, months: 2, owner: TBD, status: todo, reverify: true}
+  - {id: H4, ws: hardware, title: "SPENVIS radiation analysis for the 550 km 45°/10° orbits; parts selection", start: 1, months: 1, owner: TBD, status: todo}
+  - {id: H5, ws: hardware, title: "iThemba LABS: confirm proton SEE test access; book slot for processor/memory/SDR", start: 4, months: 3, depends: [H3], owner: TBD, status: todo, reverify: true}
+  - {id: H6, ws: hardware, title: "Payload processor module chosen; heypcb.ai carrier board", start: 3, months: 2, depends: [H3], owner: TBD, status: todo}
+  - {id: H7, ws: hardware, title: "Payload frozen against the bus/host ICD (mass, power, interfaces)", start: 6, months: 2, depends: [R1, H2, H6, L3], owner: TBD, status: todo}
 
   # --- Early service ---
   - {id: V1, ws: service, title: "6–12 satellites at 45° (Stage 2 early service)", start: 30, months: 12, depends: [F3, S5], owner: TBD, status: todo}

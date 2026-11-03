@@ -29,6 +29,8 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - `ground/api/`: customer REST API (FastAPI): devices, messages, SLA, monthly usage; rate limit, audit log, `/metrics`, key revocation. Keys: `docker compose exec api python app.py create-key "<customer>"`.
 - `forgestar/params/rf.yaml`: radio parameters with source/status. `docs/verification/register.yaml` → `scripts/verify_register.py` → `docs/verification/VERIFY.md`: everything still to confirm.
 - `hardware/`: in-house PCB pipeline (SKiDL → KiCad pcbnew placement → Freerouting → DRC → fab zip). Board 1: payload interface board (`hardware/boards/pib/pib.py`).
+- `docs/brief.md` → `output/FORGE_STAR_Brief.pdf`: technical and investor brief (sections tagged by reader with `@reader`; `![caption](path)` images; `<!-- diagram:architecture -->`). Keep its numbers in step with the model, sims and tracker.
+- Hardware bridging (register V1–V7, readiness H1–H7): heypcb.ai boards; hosting platforms / bus partner; heritage RF; Antenna Magus/openEMS; SPENVIS + iThemba LABS; Capella.
 - `tests/`: pytest suite (`pytest.ini` limits collection to `tests/`). `.github/workflows/ci.yml` runs the tests, a quick simulation, the model, the PDF build and the image builds on every push.
 - `docs/ntn-testbed-plan.md`: NB-IoT NTN lab plan.
 - `research/`: original inputs (the Exosat analysis, the open-source stack map, the first FORGE STAR plan, the v1 strategy summary). Read-only reference.
@@ -60,7 +62,7 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Schedule: with dependencies chained, Stage 2 lands ~61 months from start if run in sequence; ~43 months on the fast track (own demonstrator in parallel with the hosted payload, Series A on the hosted-payload result).
 - **Stage 3 design:** 42 sats @45° + 6 @10° (48) + 6 gateways (Hartebeesthoek, Cape Town, Walvis Bay, Mauritius, Malindi, Lagos) + isoflux antenna → 95% ≤ 26 min at all 7 customer sites (`sim/equatorial_study.py`). Re-send-until-acked is built (ACK frames, gateway dedupe); live run: 95% ≤ ~40 min on 24 sats, SA gateways.
 - Stress tests: no sovereign contract → year-6 revenue ~$19.5M (biggest commercial risk); IoT at $1 → ~$31.6M. Seed must close by month 12 → raise on signed LOIs (tracker option `seed_on_lois`, earliest ~month 11).
-- Launch readiness: `python3 scripts/launch_readiness.py` → `docs/LAUNCH_READINESS.md` (TRL in `readiness/trl.yaml`). First payload in orbit: ~Feb 2029 fast track; critical path runs through ICASA (counsel → pre-application → test licence → lab).
+- Launch readiness: `python3 scripts/launch_readiness.py` → `docs/LAUNCH_READINESS.md` (TRL in `readiness/trl.yaml`). First payload in orbit: ~Apr 2029 fast track (after the payload freeze H7); own satellite ~Jun 2029; critical path runs through ICASA (counsel → pre-application → test licence → lab).
 - IoT pricing: entrants at ~$1/device/month; at that price year-6 revenue ~$31.6M (vs $37.5M). The sovereign contract is the real dependency.
 - Antenna: demo = patch + deeper NB-IoT repetition (mask ~26°); Stage 2 = shaped isoflux beam (mask 16–21°, needs ~25–40 W during passes).
 - Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.

@@ -26,13 +26,16 @@ jobs:
         run: python sim/antenna_trade.py > /dev/null && python sim/sgp4_crosscheck.py > /dev/null && python sim/latency_sim.py > /dev/null && python sim/equatorial_study.py > /dev/null && python readiness/tracker.py > /dev/null && python scripts/launch_readiness.py > /dev/null && python scripts/itu_parameters.py > /dev/null
       - name: Verification register
         run: python scripts/verify_register.py > /dev/null
-      - name: Strategy PDF
-        run: python scripts/build_pdf.py
+      - name: Strategy PDF and technical/investor brief
+        run: |
+          python scripts/build_pdf.py
+          python scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf --subtitle "Technical and investor brief" --tagline "Investors  ·  Counsel  ·  Systems & RF  ·  Software  ·  Hardware  ·  Due diligence" --label "Brief  ·  November 2026  ·  Confidential" --title "FORGE STAR — Technical and Investor Brief"
       - uses: actions/upload-artifact@v4
         with:
           name: forge-star-outputs
           path: |
             output/FORGE_STAR_Strategy.pdf
+            output/FORGE_STAR_Brief.pdf
             model/results/
             sim/results/
 

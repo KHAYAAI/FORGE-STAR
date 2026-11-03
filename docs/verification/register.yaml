@@ -100,3 +100,83 @@ claims:
     status: unverified
     sources: []
     confirm_by: "Counsel / B-BBEE verification agency"
+  # ---- Bridging partners and tools (hardware gaps heypcb.ai does not cover); web-checked 2026-11-03 ----
+  - id: V1
+    area: partners
+    claim: "Hosted-payload platforms (e.g. Loft Orbital Payload Hub) take on bus, structure, thermal, integration, launch and ops."
+    used_in: [docs/brief.md §Hardware, readiness H2]
+    status: web-checked
+    finding: >-
+      Loft buys standard buses and fits its Payload Hub; integration of a hub reported at ~2 days. Customers include
+      NASA, DARPA, Microsoft, Arabsat. No public pricing: request a quote. D-Orbit, Exolaunch, Open Cosmos not checked.
+    sources:
+      - https://www.loftorbital.com/whatwedo
+      - https://payloadspace.com/blackrock-leads-loft-orbitals-140-million-raise/
+      - https://aerospaceamerica.aiaa.org/falcon-9-boosts-dozens-of-sats-including-two-that-will-test-a-new-way-of-conducting-business-in-space/
+    confirm_by: "Founder (RFQ to Loft + one other host)"
+  - id: V2
+    area: partners
+    claim: "Dragonfly Aerospace / CubeSpace can provide the bus or a hosted slot."
+    used_in: [docs/brief.md §Hardware, readiness R1]
+    status: web-checked
+    finding: >-
+      Dragonfly (Stellenbosch) offers 50/100/150-kg-class buses with payloads up to ~50 kg; CubeSpace and Dragonfly
+      supplied hardware to SpaceX Transporter-17 (Jul 2026). No hosted-payload offer found publicly: ask directly.
+    sources:
+      - https://satsearch.co/products/dragonfly-aerospace-n-dragonfly-bus
+      - https://spaceinafrica.com/2026/07/16/south-african-space-companies-supply-over-280-products-in-spacex-transporter-17-launch/
+    confirm_by: "Founder (RFQ)"
+  - id: V3
+    area: hardware
+    claim: "Flight-heritage CubeSat radios can replace custom S/X-band hardware for Stage 1."
+    used_in: [docs/brief.md §Hardware]
+    status: web-checked
+    finding: >-
+      EnduroSat list prices: S-band transceiver ~$13.2–14k (246 g, TT&C); X-band transmitter ~$32.3k (7.9–8.4 GHz,
+      up to 150 Mbps). The S-band TT&C unit is not an NB-IoT base station: the NB-IoT payload radio still needs an SDR.
+    sources:
+      - https://satsearch.co/products/endurosat-s-band-receiver
+      - https://satsearch.co/products/endurosat-x-band-transmitter
+      - https://satsearch.co/products/endurosat-versatile-wideband-software-defined-radio-sdr
+    confirm_by: "RF engineer (quotes from 2–3 vendors)"
+  - id: V4
+    area: hardware
+    claim: "Antenna Magus speeds antenna design (library of proven antennas exported to CST)."
+    used_in: [docs/brief.md §Hardware]
+    status: web-checked
+    finding: "Free Learning Edition (12 antenna types, Windows); commercial licence quote-only. Startup discounts not found."
+    sources:
+      - https://www.3ds.com/products/simulia/antenna-magus
+    confirm_by: "RF engineer"
+  - id: V5
+    area: hardware
+    claim: "iThemba LABS (Cape Town) offers proton single-event-effect testing of electronics."
+    used_in: [docs/brief.md §Hardware, readiness H5]
+    status: web-checked
+    finding: >-
+      A proton SEE test facility at iThemba LABS was built and verified with 66 and 200 MeV protons (Stellenbosch thesis,
+      2020) — described as the first in Africa. Current external access and pricing not found: ask iThemba LABS.
+    sources:
+      - https://scholar.sun.ac.za:443/handle/10019.1/109092
+    confirm_by: "Systems engineer (contact iThemba LABS)"
+  - id: V6
+    area: tools
+    claim: "SPENVIS (radiation analysis) and SimScale (structural/thermal) have free access tiers."
+    used_in: [docs/brief.md §Hardware]
+    status: web-checked
+    finding: >-
+      SPENVIS free (ESA/BIRA-IASB; latest listed release 4.6.11). SimScale free Community plan (public projects;
+      core-hour quota reported cut to 2,000 in Oct 2026). Free tiers make work public: check before uploading designs.
+    sources:
+      - https://spenvis.oma.be
+      - https://pricingsaas.com/companies/simscale
+    confirm_by: "Systems engineer"
+  - id: V7
+    area: tools
+    claim: "Valispace has a startup offer for systems engineering."
+    used_in: [docs/brief.md §Hardware]
+    status: web-checked
+    finding: "No startup programme found; Valispace reported acquired by Altium. Capella (open source) is the fallback."
+    sources:
+      - https://elreferente.es/?p=152334
+    confirm_by: "Systems engineer"

@@ -52,7 +52,7 @@ def B(items): return [Paragraph(i, ss["bul"], bulletText="▸") for i in items]
 
 def section(kicker, title):
     return [P(kicker.upper(), "kicker"), P(title, "h1"),
-            Table([[""]], colWidths=[28*mm], rowHeights=[2.2],
+            Table([[""]], colWidths=[28*mm], rowHeights=[2.2], hAlign="LEFT",
                   style=[("BACKGROUND", (0,0), (-1,-1), EMBER)]), Spacer(1, 8)]
 
 def T(rows, widths, bold_first=False, total=False):
@@ -103,13 +103,13 @@ def cover(c, d):
     c.setFillColor(colors.white); c.setFont("Cond-Bold", 50)
     c.drawString(M, 98*mm, "FORGE STAR")
     c.setFillColor(colors.HexColor("#C9CCD2")); c.setFont("Sans", 13)
-    c.drawString(M, 86*mm, "Africa's sovereign satellite data network")
+    c.drawString(M, 86*mm, COVER["subtitle"])
     c.setFont("Sans", 9.5); c.setFillColor(colors.HexColor("#8A8F98"))
-    c.drawString(M, 74*mm, "Business model  ·  Build strategy  ·  Stages  ·  Capital  ·  Potential")
+    c.drawString(M, 74*mm, COVER["tagline"])
     c.setFillColor(EMBER); c.setFont("Sans-Bold", 8)
     c.drawString(M, 30*mm, "MYFORGE PTY LTD  ·  FORGE ECOSYSTEM")
     c.setFillColor(colors.HexColor("#8A8F98")); c.setFont("Sans", 8)
-    c.drawString(M, 24*mm, "Strategy document  ·  October 2026  ·  Confidential")
+    c.drawString(M, 24*mm, COVER["label"])
     c.restoreState()
 
 def page(c, d):
@@ -119,7 +119,7 @@ def page(c, d):
     c.setFillColor(colors.white); c.setFont("Cond-Bold", 9)
     c.drawString(M, H - 7*mm, "FORGE STAR")
     c.setFillColor(colors.HexColor("#8A8F98")); c.setFont("Sans", 7.5)
-    c.drawRightString(W - M, H - 7*mm, "Sovereign satellite data for Africa")
+    c.drawRightString(W - M, H - 7*mm, COVER["header"])
     c.setStrokeColor(RULE); c.setLineWidth(0.5); c.line(M, 13*mm, W - M, 13*mm)
     c.setFillColor(MUTED); c.setFont("Sans", 7)
     c.drawString(M, 9*mm, "MYFORGE PTY LTD  ·  Confidential")
@@ -127,15 +127,106 @@ def page(c, d):
     c.drawRightString(W - M, 9*mm, f"{d.page:02d}")
     c.restoreState()
 
-OUT = Path(__file__).resolve().parent.parent / "output"
-OUT.mkdir(exist_ok=True)
-SRC = Path(__file__).resolve().parent.parent / "docs" / "strategy.md"
-doc = BaseDocTemplate(str(OUT / "FORGE_STAR_Strategy.pdf"), pagesize=A4,
+import argparse
+_ap = argparse.ArgumentParser(description="Render a FORGE STAR markdown document to the FORGE-style PDF")
+_ap.add_argument("--src", default="docs/strategy.md")
+_ap.add_argument("--out", default="output/FORGE_STAR_Strategy.pdf")
+_ap.add_argument("--subtitle", default="Africa's sovereign satellite data network")
+_ap.add_argument("--tagline", default="Business model  ·  Build strategy  ·  Stages  ·  Capital  ·  Potential")
+_ap.add_argument("--label", default="Strategy document  ·  October 2026  ·  Confidential")
+_ap.add_argument("--header", default="Sovereign satellite data for Africa")
+_ap.add_argument("--title", default="FORGE STAR — Strategy Document")
+ARGS = _ap.parse_args()
+COVER = {"subtitle": ARGS.subtitle, "tagline": ARGS.tagline, "label": ARGS.label, "header": ARGS.header}
+ROOT = Path(__file__).resolve().parent.parent
+SRC = ROOT / ARGS.src
+OUT_FILE = ROOT / ARGS.out
+OUT_FILE.parent.mkdir(exist_ok=True)
+OUT = OUT_FILE.parent
+doc = BaseDocTemplate(str(OUT_FILE), pagesize=A4,
                       leftMargin=M, rightMargin=M, topMargin=20*mm, bottomMargin=18*mm,
-                      title="FORGE STAR — Strategy Document", author="MYFORGE PTY LTD")
+                      title=ARGS.title, author="MYFORGE PTY LTD")
 fr = Frame(M, 18*mm, W - 2*M, H - 38*mm, id="f")
 doc.addPageTemplates([PageTemplate("cover", frames=[fr], onPage=cover),
                       PageTemplate("main", frames=[fr], onPage=page)])
+
+
+# ---------- figures ----------
+from reportlab.platypus import Image as RLImage
+from reportlab.graphics.shapes import Drawing, Rect, String, Line, Polygon
+
+ss["reader"] = ParagraphStyle("rd", fontName="Sans-Bold", fontSize=7.6, leading=10, textColor=GOLD, spaceAfter=6)
+ss["caption"] = ParagraphStyle("cap", fontName="Sans", fontSize=7.4, leading=9.5, textColor=MUTED, spaceAfter=8)
+
+
+def image(path, caption):
+    from reportlab.lib.utils import ImageReader
+    full = ROOT / path
+    iw, ih = ImageReader(str(full)).getSize()
+    w = W - 2*M
+    h = w * ih / iw
+    if h > 95*mm:
+        h = 95*mm; w = h * iw / ih
+    out = [RLImage(str(full), width=w, height=h)]
+    if caption:
+        out.append(P(inline(caption), "caption"))
+    return out
+
+
+def _box(d, x, y, w, h, title, sub, fill):
+    d.add(Rect(x, y, w, h, rx=4, ry=4, fillColor=fill, strokeColor=STEEL, strokeWidth=0.6))
+    d.add(String(x + w / 2, y + h - 13, title, fontName="Sans-Bold", fontSize=8, fillColor=INK, textAnchor="middle"))
+    for k, line in enumerate(sub):
+        d.add(String(x + w / 2, y + h - 25 - 9 * k, line, fontName="Sans", fontSize=6.4, fillColor=TEXT, textAnchor="middle"))
+
+
+def _arrow(d, x1, y1, x2, y2, label="", dashed=False, color=None):
+    color = color or STEEL
+    ln = Line(x1, y1, x2, y2, strokeColor=color, strokeWidth=1)
+    if dashed:
+        ln.strokeDashArray = [3, 2]
+    d.add(ln)
+    import math
+    a = math.atan2(y2 - y1, x2 - x1); s_ = 5
+    d.add(Polygon([x2, y2, x2 - s_ * math.cos(a - 0.4), y2 - s_ * math.sin(a - 0.4),
+                   x2 - s_ * math.cos(a + 0.4), y2 - s_ * math.sin(a + 0.4)], fillColor=color, strokeColor=color))
+    if label:
+        d.add(String((x1 + x2) / 2, (y1 + y2) / 2 + 4, label, fontName="Sans", fontSize=6, fillColor=MUTED, textAnchor="middle"))
+
+
+def diagram(name):
+    w = W - 2*M
+    if name == "architecture":
+        d = Drawing(w, 215)
+        lt, sat, gnd, cust = colors.HexColor("#F6F7F9"), colors.HexColor("#FFF3EC"), colors.HexColor("#EEF3FB"), colors.HexColor("#EFF8F1")
+        gap = 40
+        bw = (w - 3 * gap) / 4
+        xs = [k * (bw + gap) for k in range(4)]
+        top, bh = 128, 66
+        _box(d, xs[0], top, bw, bh, "Field devices", ["pumps · sensors · collars", "vessels · trackers", "device SDK (C)"], lt)
+        _box(d, xs[1], top, bw, bh, "Satellites", ["F´ flight software", "store-and-forward", "secured commands"], sat)
+        _box(d, xs[2], top, bw, bh, "Gateways", ["SA ×2 + 4 partners", "modem · RS + conv FEC", "dedupe · ACK uplink"], gnd)
+        _box(d, xs[3], top, bw, bh, "Data platform (SA)", ["Kafka → TimescaleDB", "billing · retention", "POPIA · backups"], gnd)
+        _box(d, xs[3], 22, bw, 70, "Customers", ["ThingsBoard dashboards", "API: devices · SLA", "usage · invoices"], cust)
+        _box(d, xs[1], 22, 2 * bw + gap, 54, "Operations", ["mission ops tool · pass predictor · safe mode", "readiness · verification · CI"], lt)
+        _box(d, xs[0], 22, bw, 54, "Resale partner", ["Stage 0 traffic", "before our satellites"], lt)
+        y1, y2 = top + 46, top + 22
+        _arrow(d, xs[0] + bw + 2, y1, xs[1] - 2, y1, "NB-IoT")
+        _arrow(d, xs[1] + bw + 2, y1, xs[2] - 2, y1, "X-band")
+        _arrow(d, xs[2] + bw + 2, y1, xs[3] - 2, y1, "Kafka")
+        _arrow(d, xs[2] - 2, y2, xs[1] + bw + 2, y2, "ACKs", color=EMBER)
+        _arrow(d, xs[1] - 2, y2, xs[0] + bw + 2, y2, "ACKs", dashed=True, color=EMBER)
+        _arrow(d, xs[3] + bw / 2, top - 2, xs[3] + bw / 2, 94)
+        _arrow(d, xs[1] + bw / 2, 78, xs[1] + bw / 2, top - 2, "commands")
+        ln = Line(xs[0] + bw / 2, 22, xs[0] + bw / 2, 10, strokeColor=STEEL, strokeWidth=1); ln.strokeDashArray = [3, 2]; d.add(ln)
+        ln = Line(xs[0] + bw / 2, 10, xs[3] + bw / 2, 10, strokeColor=STEEL, strokeWidth=1); ln.strokeDashArray = [3, 2]; d.add(ln)
+        _arrow(d, xs[3] + bw / 2, 10, xs[3] + bw / 2, 20, dashed=True)
+        d.add(String(xs[1] + bw, 2, "Stage 0: partner network traffic reaches the same platform", fontName="Sans", fontSize=6,
+                     fillColor=MUTED, textAnchor="middle"))
+        return [d, Spacer(1, 4),
+                P("Orange: acknowledgements (ground → satellites → devices, so devices stop re-sending). "
+                  "Dashed: Stage 0 resale traffic, before our satellites fly.", "caption")]
+    raise ValueError(f"unknown diagram {name}")
 
 
 # ---------- markdown → flowables ----------
@@ -148,6 +239,9 @@ doc.addPageTemplates([PageTemplate("cover", frames=[fr], onPage=cover),
 #   *text*              whole-paragraph italics → small muted note
 #   **bold**, *italic*, `code`  inline
 #   ---                 ignored (section breaks are implicit)
+#   @reader text        "who this section is for" tag under a section title
+#   ![caption](path)    image (path relative to the repo root)
+#   <!-- diagram:name -->  vector diagram drawn by diagram()
 
 def inline(t):
     t = t.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
@@ -201,6 +295,12 @@ def parse(md):
             cells = [c.strip() for c in st.strip("|").split("|")]
             if not all(re.fullmatch(r":?-{2,}:?", c) for c in cells): rows.append(cells)
         elif rows: flush(); continue
+        elif st.startswith("<!-- diagram:"):
+            flush(); out.extend(diagram(st[len("<!-- diagram:"):].rstrip("->").strip()))
+        elif re.fullmatch(r"!\[[^\]]*\]\([^)]+\)", st):
+            flush(); m = re.fullmatch(r"!\[([^\]]*)\]\(([^)]+)\)", st); out.extend(image(m.group(2), m.group(1)))
+        elif st.startswith("@reader "):
+            flush(); out.append(P("FOR: " + inline(st[8:].strip()).upper(), "reader"))
         elif st.startswith("## "):
             flush()
             kicker = st[3:].strip()
@@ -233,4 +333,4 @@ def parse(md):
 
 s = [NextPageTemplate("main"), PageBreak()] + parse(SRC.read_text(encoding="utf-8"))
 doc.build(s)
-print(f"ok: {OUT / 'FORGE_STAR_Strategy.pdf'} from {SRC.name}")
+print(f"ok: {OUT_FILE} from {SRC.name}")

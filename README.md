@@ -6,7 +6,28 @@ FORGE STAR starts with satellite IoT, maritime AIS and sovereign data relay, not
 
 [![CI](https://github.com/KHAYAAI/FORGE-STAR/actions/workflows/ci.yml/badge.svg)](https://github.com/KHAYAAI/FORGE-STAR/actions/workflows/ci.yml)
 
-> All figures are illustrative. Regulatory and market facts need confirming by counsel before external use (see [`docs/verification/VERIFY.md`](docs/verification/VERIFY.md)). Not financial advice.
+> All figures are illustrative. Regulatory, market and vendor facts need confirming before external use (see [`docs/verification/VERIFY.md`](docs/verification/VERIFY.md)). Not financial advice.
+
+---
+
+## Start here: documents
+
+| Document | For | What it is |
+|---|---|---|
+| **[Technical and investor brief (PDF)](output/FORGE_STAR_Brief.pdf)** | Investors, counsel, engineers, partners, due diligence | One brief with a section for each reader: case, market, financials, regulation, architecture, RF design, flight software, ground platform, hardware plan, evidence, path to launch, risks, sources |
+| [Strategy (PDF)](output/FORGE_STAR_Strategy.pdf) · [source](docs/strategy.md) | Founders, board | The full strategy with every analysis check |
+| [Launch readiness](docs/LAUNCH_READINESS.md) | Everyone | Scorecard, TRL, critical path, blockers (generated) |
+| [Verification register](docs/verification/VERIFY.md) | Counsel, engineers | Every claim, vendor figure and radio value still to confirm, with sources |
+| [ITU filing parameters](docs/itu/FILING_PARAMETERS.md) | Spectrum counsel | Draft NGSO filing sheet generated from the design |
+| [Mission operations](docs/operations/mission-ops.md) · [Security and POPIA](docs/operations/security.md) | Operations, security | Procedures and controls |
+
+Both PDFs are built from markdown in `docs/`:
+
+```bash
+python3 scripts/build_pdf.py                                        # strategy
+python3 scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf \
+  --subtitle "Technical and investor brief" --label "Brief  ·  November 2026  ·  Confidential"
+```
 
 ---
 
@@ -138,7 +159,13 @@ CI runs all of this on every push: the Python tests and analysis, the platform i
 | **Delivery measured (live run)** | 95% within ~40 minutes on 24 satellites with SA gateways only |
 | **Year-6 revenue** | $37.5M base; $31.6M with IoT at ~$1/device; $19.5M without a government contract |
 | **Equity to Stage 3** | ~$50M |
-| **First payload in orbit** | ~Feb 2029 on the fast track |
+| **Delivery measured on the Stage 3 design (live run)** | 95% of satellite messages within 9 minutes |
+| **Link margin** | Decodes at Eb/N0 ≈ 2.5 dB with CCSDS RS + convolutional coding |
+| **First payload in orbit** | ~Apr 2029 on the fast track (hosted payload); own satellite ~Jun 2029 |
+
+## Hardware: build, buy, bridge
+
+Boards are designed with [heypcb.ai](https://heypcb.ai) and checked by the in-house KiCad pipeline in [`hardware/`](hardware). The gaps heypcb.ai does not cover are bridged with flight-heritage suppliers and mature tools: hosted-payload platforms or the bus partner for structure, thermal and integration; flight-heritage S/X-band radios; Antenna Magus and openEMS for antennas; SPENVIS and iThemba LABS (Cape Town) for radiation. Details, list prices and what still needs a quote are in section 09 of the brief and items V1–V7 of the verification register.
 
 ## Status
 
