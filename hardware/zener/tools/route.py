@@ -4,7 +4,7 @@ Usage: FREEROUTING_JAR=/path/freerouting.jar python3 tools/route.py boards/pib
 Needs KiCad 10 (pcbnew Python module) and Java 17+. Get the JAR from
 https://github.com/freerouting/freerouting/releases (v1.9.0 was the version planned for this repo).
 
-Not yet run: executing the downloaded JAR was blocked in the cloud session where this was written.
+Runs in GitHub CI (.github/workflows/route-boards.yml), which uploads the routed boards.
 An autorouted board is a starting point. RF, power and decoupling traces need an engineer's review.
 """
 from __future__ import annotations
@@ -44,15 +44,15 @@ def main() -> int:
     # each pcbnew step runs in its own process (see place.py)
     steps = [
         [sys.executable, __file__, str(bdir), "export"],
-        ["java", "-Djava.awt.headless=true", "-jar", jar, "-de", str(dsn), "-do", str(ses), "-mp", "30"],
+        ["java", "-jar", jar, "-de", str(dsn), "-do", str(ses), "-mp", "30", "-host-mode", "cli"],
         [sys.executable, __file__, str(bdir), "import"],
         [sys.executable, __file__, str(bdir), "fill"],
     ]
     for cmd in steps:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
-        if r.returncode:
-            print(" ".join(cmd[:4]), "failed:", (r.stdout + r.stderr)[-600:])
-            return r.returncode
+        if r.returncode or (cmd[0] == "java" and not ses.exists()):
+            print(" ".join(cmd[:4]), "failed:", (r.stdout + r.stderr)[-2000:])
+            return r.returncode or 1
     dsn.unlink(missing_ok=True)
     ses.unlink(missing_ok=True)
     print(f"{name}: routed")

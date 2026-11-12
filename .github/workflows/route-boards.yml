@@ -1,0 +1,52 @@
+name: Route boards
+
+# Autoroutes the Zener boards with Freerouting on GitHub's servers and uploads the results.
+# An autorouted board is a starting point: an engineer must review it before fabrication.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "hardware/zener/boards/**"
+      - "hardware/zener/tools/**"
+      - ".github/workflows/route-boards.yml"
+
+jobs:
+  route:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [pib, iot_node]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install KiCad 10
+        run: |
+          sudo add-apt-repository -y ppa:kicad/kicad-10.0-releases
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends kicad kicad-footprints kicad-symbols xvfb
+      - name: Download Freerouting
+        run: curl -fsSL -o "$RUNNER_TEMP/freerouting.jar" https://github.com/freerouting/freerouting/releases/download/v1.9.0/freerouting-1.9.0.jar
+      - name: Route
+        working-directory: hardware/zener
+        env:
+          FREEROUTING_JAR: ${{ runner.temp }}/freerouting.jar
+        run: xvfb-run -a /usr/bin/python3 tools/route.py boards/${{ matrix.board }}
+      - name: Design-rule check, fabrication files and pictures
+        if: always()
+        working-directory: hardware/zener
+        run: |
+          B=${{ matrix.board }}; PCB=boards/$B/eda/$B.kicad_pcb; OUT=out/$B; mkdir -p $OUT/gerbers
+          kicad-cli pcb drc --severity-error -o $OUT/drc.rpt $PCB || true
+          grep -E "^\[" $OUT/drc.rpt | sort | uniq -c | tee $OUT/drc-summary.txt || true
+          kicad-cli pcb export gerbers -o $OUT/gerbers/ $PCB || true
+          kicad-cli pcb export drill -o $OUT/gerbers/ $PCB || true
+          kicad-cli pcb export pos --format csv --units mm -o $OUT/$B-pos.csv $PCB || true
+          xvfb-run -a kicad-cli pcb render --side top --width 1600 --height 1100 -o $OUT/$B-top.png $PCB || true
+          xvfb-run -a kicad-cli pcb render --side bottom --width 1600 --height 1100 -o $OUT/$B-bottom.png $PCB || true
+          cp $PCB $OUT/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: routed-${{ matrix.board }}
+          path: hardware/zener/out/${{ matrix.board }}/
