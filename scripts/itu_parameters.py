@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
-from forgestar.linkbudget import LINKS, fspl_db, slant_range_km  # noqa: E402
+from forgestar.linkbudget import LINKS, fspl_db, slant_range_km, with_changes  # noqa: E402
 
 SHELLS = [  # name, sats, planes, inclination, altitude km  (Stage 3 design + growth room in the filing)
     ("A (main)", 42, 7, 45.0, 550.0),
@@ -66,19 +66,33 @@ def main():
     L += ["", "## Frequency assignments (draft)", "",
           "| Link | Service | Direction | Band (MHz) | Emission | Max EIRP | Max PFD at surface | Note |",
           "|---|---|---|---|---|---|---|---|"]
+    # The filing must cover the highest-power payload we plan to fly: the Stage 2-3 service payload
+    # (isoflux antenna, 8 W RF), not only the demonstrator patch at 2 W.
+    service_dl = with_changes("nbiot_downlink", name="NB-IoT NTN downlink, service payload (isoflux, 8 W)",
+                              sat_pattern="isoflux", edge_el_deg=20.0, tx_gain_dbi=5.0, tx_power_dbw=10 * math.log10(8.0))
+    rows = []
     for key, svc, direction, band, emission, note in BANDS:
-        l = LINKS[key]
+        rows.append((LINKS[key], svc, direction, band, emission, note + ("; demonstrator patch, 2 W" if key == "nbiot_downlink" else "")))
+        if key == "nbiot_downlink":
+            rows.append((service_dl, svc, direction, band, emission, "3GPP n256; Stage 2-3 payload: highest EIRP"))
+    low = lambda l: pfd_dbw_m2(l.tx_power_dbw + l.tx_gain_dbi - l.sat_gain_loss_db(20), slant_range_km(20))
+    low_iso, low_patch = low(service_dl), low(LINKS["nbiot_downlink"])
+    for l, svc, direction, band, emission, note in rows:
         if l.sat_side == "tx":
             eirp = l.tx_power_dbw + l.tx_gain_dbi
             worst = max(pfd_dbw_m2(eirp - l.sat_gain_loss_db(e), slant_range_km(e)) for e in range(5, 91))
             bw_4k = 10 * math.log10(min(l.bandwidth_hz, 4000) / l.bandwidth_hz)
-            pfd = f"{worst:.1f} dB(W/m²) ({worst + bw_4k:.1f} in 4 kHz)"
+            bw_1m = 10 * math.log10(min(l.bandwidth_hz, 1e6) / l.bandwidth_hz)
+            pfd = f"{worst:.1f} dB(W/m²) ({worst + bw_4k:.1f} in 4 kHz; {worst + bw_1m:.1f} in 1 MHz)"
             eirp_s = f"{eirp:.1f} dBW"
         else:
             eirp_s, pfd = f"{l.tx_power_dbw + l.tx_gain_dbi:.1f} dBW (earth station)", "— (satellite receives)"
         L.append(f"| {l.name} | {svc} | {direction} | {band} | {emission} | {eirp_s} | {pfd} | {note} |")
     L += ["", "PFD: worst case over elevations 5–90° from `forgestar/linkbudget.py` (satellite antenna pattern included). "
-          "Counsel to compare with RR Article 21 limits and Appendix 5 coordination thresholds for each band.", "",
+          "Counsel to compare with RR Article 21 limits and Appendix 5 coordination thresholds for each band. "
+          f"File the envelope of both downlink rows. The demonstrator patch has the highest density, straight down. The service payload has the highest EIRP "
+          f"and the highest density at low arrival angles, where limits are usually tightest: {low_iso:.1f} dB(W/m²) at 20° against {low_patch:.1f} for the patch. "
+          "Each extra NB-IoT carrier adds its own power.", "",
           "## Earth stations (gateways)", "", "| Gateway | Country | Latitude | Longitude | Role |", "|---|---|---|---|---|"]
     for name, cc, la, lo in GATEWAYS:
         role = "owned (SA)" if cc == "ZA" else "partner / leased; data relayed to SA"
@@ -95,7 +109,9 @@ def main():
           "- Confirm n256 MSS band availability in SA and coordination with terrestrial IMT/MSS incumbents.",
           "- Confirm the feeder band (X-band 8025–8400 MHz vs Ka) and gateway licensing in NA, MU, KE, NG.",
           "- AIS reception: confirm satellite AIS (receive-only) treatment under Appendix 18 / Res. 360.",
-          "- Decide the filed satellite count (design 48 vs growth to ~96) against milestone risk."]
+          "- Decide the filed satellite count (design 48 vs growth to ~96) against milestone risk.",
+          "- Confirm both downlink payloads (patch 2 W, isoflux 8 W) are inside the power-flux-density limits for 2170–2200 MHz; if not, the fallbacks are lower power with deep coverage mode, a 450 km orbit or a narrower carrier (`sim/antenna_trade.py`).",
+          "- Capacity planning may need more than one carrier per satellite later (`sim/capacity_study.py`): file enough carriers and bandwidth for growth."]
     out = ROOT / "docs" / "itu" / "FILING_PARAMETERS.md"; out.parent.mkdir(exist_ok=True); out.write_text("\n".join(L) + "\n")
     print("\n".join(L[:30]))
 

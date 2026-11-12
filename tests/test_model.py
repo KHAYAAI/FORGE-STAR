@@ -19,6 +19,21 @@ def test_scenarios_ordered():
     assert rev["low"] < rev["base"] < rev["high"]
 
 
+def test_iot_margin_is_tied_to_fleet_capacity():
+    base = fm.build(A, A["scenarios"]["base"])
+    # too few satellites: nothing on our own network, whatever the year
+    for r in base:
+        if r["sats_in_service"] < A["network"]["own_network_min_sats"]:
+            assert r["iot_own_network_share_pct"] == 0
+    assert 0 < base[-1]["iot_own_network_share_pct"] <= 100
+    compact = fm.build(A, A["scenarios"]["compact_protocol"])
+    hourly = fm.build(A, A["scenarios"]["hourly_plans"])
+    assert hourly[-1]["iot_own_network_share_pct"] < base[-1]["iot_own_network_share_pct"] <= compact[-1]["iot_own_network_share_pct"]
+    assert hourly[-1]["ebitda"] < base[-1]["ebitda"] <= compact[-1]["ebitda"]
+    # capacity doubles with the fleet
+    assert abs(fm.own_network_capacity(A, 48) - 2 * fm.own_network_capacity(A, 24)) < 1e-6
+
+
 def test_monthly_matches_annual_cash():
     rows = fm.build(A, A["scenarios"]["base"])
     mon = fm.monthly(A, rows)

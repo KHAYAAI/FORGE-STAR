@@ -391,9 +391,13 @@ Gross figures. Revenue, grants and prepayments reduce the equity need to reach S
 
 | Scenario | Year-6 revenue | Year-6 EBITDA | Note |
 |---|---|---|---|
-| **Base** | $37.5M | $12.6M | Seed closed by month 12; no month below zero cash |
-| **IoT at ~$1/device** | $31.6M | $9.2M | Still inside the Stage 3 range |
-| **No SA government capacity contract** | $19.5M | $2.2M | Below the Stage 3 range: **the biggest commercial risk** |
+| **Base** | $37.5M | $11.3M | Seed closed by month 12; no month below zero cash. Our satellites carry about 42% of IoT devices; the rest stay on the resale partner |
+| **Compact own protocol** | $37.5M | $12.6M | About three times the messages per carrier: our satellites carry all IoT devices |
+| **Every device reports hourly** | $37.5M | $10.5M | Our satellites carry about 7% of devices: hourly plans need Stage 4 |
+| **IoT at ~$1/device** | $31.6M | $8.7M | Still inside the Stage 3 range |
+| **No SA government capacity contract** | $19.5M | $0.8M | Below the Stage 3 range: **the biggest commercial risk** |
+
+**Revenue is now tied to what the satellites can carry.** IoT moves onto our own network only when at least 6 satellites are in service, and only up to the fleet's message capacity on the standard plan of 4 messages per device per day (`sim/capacity_study.py`). Devices beyond that stay on the resale partner's network at the resale cost. Revenue is unchanged; margin is lower.
 
 **IoT price pressure.** New entrants now price at about $1 per device per month (Myriota from $0.99; Sateliot targeting about €1). That's below our $2–5 assumption. At about $1, year-6 revenue falls from about $37.5M to about $31.6M, which is still in range. The reason: IoT is only about a quarter of Stage 3 revenue, and the **SA government sovereign-capacity contract is the line the plan really depends on**. Price IoT on sovereignty and local support, not on undercutting, and win the government anchor early.
 

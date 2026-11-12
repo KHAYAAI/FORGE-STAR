@@ -67,6 +67,7 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Antenna (corrected Nov 2026): demo = patch + deep coverage mode (mask ~34°); Stage 2–3 = isoflux beam with ~8 W RF (mask 16°, needs ~38 W from the bus during passes, so a 12U). Fallbacks: 5 W + deep coverage mode, 450 km orbit, compact own protocol.
 - Link budget: antenna gain is tied to beam shape (`linkbudget.cos_beam_gain_dbi`): a ±30° patch has ~9.7 dBi. Uplink closes from ~29°, downlink from ~47°. The downlink sets the mask; sims use the higher of the two.
 - Capacity (`sim/capacity_study.py`): ~6 messages/s per NB-IoT carrier per satellite. Stage 3 carries ~1.4 messages per device per day at 330k devices. Capacity, not coverage, is the limit at scale.
+- Financial model is tied to capacity (`network:` in `model/assumptions.yaml`): IoT on our own satellites needs ≥6 in service and is capped by fleet message capacity at 4 messages/device/day; the rest stays on resale. Base year-6 EBITDA $11.3M (42% of IoT on own network); compact protocol $12.6M (100%).
 
 ## Open-source stack
 - **Flight:** F´ (primary), cFS (alternative), libcsp, Zephyr/FreeRTOS

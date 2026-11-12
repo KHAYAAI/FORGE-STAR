@@ -38,6 +38,15 @@ def apply_overrides(a: dict, sc: dict) -> dict:
     return a
 
 
+def own_network_capacity(a: dict, sats: int) -> float:
+    """Devices the fleet can carry on the standard message plan (0 if too few satellites for a service)."""
+    n = a.get("network")
+    if not n or sats < n["own_network_min_sats"]:
+        return 0.0
+    per_day = n["messages_per_second_per_carrier"] * n["carriers"] * 86400 * sats * n["sats_in_view_per_satellite"]
+    return per_day / (n["busy_region_share"] * n["messages_per_device_day"])
+
+
 def build(a: dict, sc: dict) -> list[dict]:
     a = apply_overrides(a, sc)
     yrs = a["years"]; c = a["constellation"]; g = a["ground"]; t = a["team"]
@@ -51,6 +60,12 @@ def build(a: dict, sc: dict) -> list[dict]:
         dev_avg = (dev_prev + r["iot"]["devices"][i]) / 2 * R
         iot = dev_avg * r["iot"]["arpu_month"][i] * 12
         own_net = y >= r["iot"]["own_network_from_year"]
+        # own-network share of IoT: limited by what the satellites in service can carry
+        cap_dev = own_network_capacity(a, c["sats_in_service"][i]) if own_net else 0.0
+        own_share = min(1.0, cap_dev / dev_avg) if dev_avg else 0.0
+        if "network" not in a:
+            own_share = 1.0 if own_net else 0.0
+        iot_own, iot_resale = iot * own_share, iot * (1 - own_share)
         ais = r["ais_subscribers"][i] * r["ais_price_year"][i] * R
         sov = r["sovereign"]["contract_value_year"][i] * R
         # prepayments are cash now, revenue later: draw down deferred balance against contract revenue
@@ -64,8 +79,8 @@ def build(a: dict, sc: dict) -> list[dict]:
         revenue = iot + ais + sov + gs + ms + eco
 
         # ---- cost of revenue ----
-        own_rev = (iot if own_net else 0) + ais + sov + eco
-        cogs = (0 if own_net else iot * o["cogs_resale_pct"]) + ms * o["cogs_leased_pct"] \
+        own_rev = iot_own + ais + sov + eco
+        cogs = iot_resale * o["cogs_resale_pct"] + ms * o["cogs_leased_pct"] \
             + (own_rev * o["network_cogs_pct"] if prev_sats or c["sats_in_service"][i] else 0)
 
         # ---- opex ----
@@ -93,6 +108,7 @@ def build(a: dict, sc: dict) -> list[dict]:
         cash += operating_cash - capex + funding
         rows.append({
             "year": y, "sats_in_service": c["sats_in_service"][i], "devices_avg": round(dev_avg),
+            "devices_own_capacity": round(cap_dev), "iot_own_network_share_pct": round(own_share * 100, 1),
             "rev_iot": iot, "rev_ais": ais, "rev_sovereign": sov, "rev_ground_services": gs,
             "rev_managed_sites": ms, "rev_ecosystem": eco, "revenue": revenue,
             "cogs": cogs, "gross_margin_pct": (revenue - cogs) / revenue * 100 if revenue else 0,
@@ -200,6 +216,25 @@ def main():
          1e6 <= b[0]["capex"] + b[0]["opex"] + b[0]["cogs"] <= 3e6),
         ("Never runs out of cash (base)", "cash ≥ 0", f"min ${m(min(r['cash_end'] for r in b))}M", min(r["cash_end"] for r in b) >= 0),
     ]
+    # network capacity: how much of the IoT base the fleet carries
+    n = a.get("network", {})
+    L += ["## Network capacity (IoT on our own satellites)", "",
+          f"Standard plan: {n.get('messages_per_device_day')} messages per device per day. One carrier takes "
+          f"{n.get('messages_per_second_per_carrier')} messages a second per satellite (`sim/capacity_study.py`). Devices the fleet "
+          "cannot carry stay on the resale partner's network at the resale cost of revenue. Below "
+          f"{n.get('own_network_min_sats')} satellites all IoT stays on resale.", "",
+          "| Scenario | " + " | ".join(f"Year {r['year']}" for r in b) + " |", "|---|" + "---|" * len(b)]
+    L.append("| Satellites in service | " + " | ".join(str(r["sats_in_service"]) for r in b) + " |")
+    L.append("| Devices (average, base) | " + " | ".join(f"{r['devices_avg']:,}" for r in b) + " |")
+    for name in ("base", "compact_protocol", "hourly_plans"):
+        if name in results:
+            L.append(f"| Own-network share of IoT: {name} | " + " | ".join(f"{r['iot_own_network_share_pct']:.0f}%" for r in results[name]) + " |")
+    for name in ("base", "compact_protocol", "hourly_plans"):
+        if name in results:
+            L.append(f"| EBITDA $M: {name} | " + " | ".join(m(r["ebitda"]) for r in results[name]) + " |")
+    L.append("")
+    checks.append(("Fleet carries the year-6 IoT base on the standard plan", "100%", f"{b[-1]['iot_own_network_share_pct']:.0f}%",
+                   b[-1]["iot_own_network_share_pct"] >= 99.9))
     # monthly cash and ownership
     mon = {name: monthly(a, rows) for name, rows in results.items()}
     caps = cap_table(a)

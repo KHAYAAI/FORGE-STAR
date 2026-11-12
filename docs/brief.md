@@ -101,10 +101,14 @@ Generated from `model/` (years 1–6, Stage 0 to Stage 3). Illustrative; not fin
 
 | Stress test | Year-6 revenue | Year-6 EBITDA | Read |
 |---|---|---|---|
-| **Base** | $37.5M | $12.6M | No month below zero cash |
-| **IoT at ~$1/device** | $31.6M | $9.2M | Still in the Stage 3 range |
-| **No SA government contract** | $19.5M | $2.2M | Below the Stage 3 range: the biggest commercial risk |
-| **Low case (slow sales, higher costs)** | $22.5M | $3.0M | Cash short ~$1.5M in year 3: needs a larger seed or earlier Series A |
+| **Base** | $37.5M | $11.3M | No month below zero cash. Our satellites carry ~42% of IoT devices; the rest stay on the resale partner |
+| **Compact own protocol** | $37.5M | $12.6M | Our satellites carry all IoT devices |
+| **Every device reports hourly** | $37.5M | $10.5M | Our satellites carry ~7% of devices: hourly plans need Stage 4 |
+| **IoT at ~$1/device** | $31.6M | $8.7M | Still in the Stage 3 range |
+| **No SA government contract** | $19.5M | $0.8M | Below the Stage 3 range: the biggest commercial risk |
+| **Low case (slow sales, higher costs)** | $22.5M | $2.6M | Cash short ~$1.5M in year 3: needs a larger seed or earlier Series A |
+
+The model now ties IoT margin to fleet capacity: devices move to our own satellites only with 6 or more in service, and only up to what they can carry at 4 messages per device per day. The rest stay on the resale partner at the resale cost.
 
 #### Funding plan
 

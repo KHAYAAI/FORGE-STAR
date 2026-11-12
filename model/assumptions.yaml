@@ -17,6 +17,18 @@ scenarios:
     opex: 1.0
     overrides:
       revenue.iot.arpu_month: [1.2, 1.1, 1.0, 1.0, 1.0, 1.0]     # LEO IoT entrants at ~$1/device/month (2026)
+  compact_protocol:
+    revenue: 1.0
+    capex: 1.0
+    opex: 1.0
+    overrides:
+      network.messages_per_second_per_carrier: 18.0   # own store-and-forward protocol: ~3x the messages per carrier
+  hourly_plans:
+    revenue: 1.0
+    capex: 1.0
+    opex: 1.0
+    overrides:
+      network.messages_per_device_day: 24            # every device reports hourly
   no_sovereign:
     revenue: 1.0
     capex: 1.0
@@ -72,6 +84,16 @@ revenue:
     sites:           [0, 20, 80, 200, 300, 300]
     price_month:     350
   ecosystem:         [150000, 300000, 500000, 800000, 1000000, 1200000]  # FORGE Freight/USV/VOCAL/ForgePay/EYE
+
+# Network capacity: ties own-network IoT revenue to what the satellites can carry (sim/capacity_study.py).
+# Devices the fleet cannot carry stay on the resale partner's network, at the resale cost of revenue.
+network:
+  own_network_min_sats: 6            # below this, passes are hours apart: all IoT stays on the resale partner
+  messages_per_device_day: 4         # the standard plan sold to customers
+  messages_per_second_per_carrier: 6.0   # one NB-IoT carrier, forgestar/capacity.py
+  carriers: 1                        # downlink power limits this on a 12U
+  sats_in_view_per_satellite: 0.011  # average satellites over southern Africa per satellite in the fleet (16° mask)
+  busy_region_share: 0.6             # share of all devices inside the busiest footprint
 
 funding:
   founder_and_bootstrap: [250000, 0, 0, 0, 0, 0]
