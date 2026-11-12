@@ -93,9 +93,11 @@ In **Stage 0**, before our own satellites fly, the same platform carries traffic
 | **Production deployment** | TLS, backups, no exposed data ports, required secrets | [`ground/deploy/`](ground/deploy) |
 | **Simulated space segment** | Runs a constellation on a sped-up clock, so the whole platform can be tested without satellites | [`ground/sandf/`](ground/sandf) |
 | **Constellation design** | Orbits with J2 (checked against SGP4), coverage, link budget, antenna options, delivery time | [`sim/`](sim), [`forgestar/`](forgestar) |
-| **Hardware** | In-house PCB pipeline: circuit as code (SKiDL) → KiCad → Freerouting → fab files. Board 1: payload interface board. | [`hardware/`](hardware) |
+| **Hardware** | Circuit boards as code. Two boards placed and autorouted with every connection made and a clean KiCad design check: the payload interface board and an IoT test device. Written in Zener (Diode's open-source `pcb` tool) and SKiDL. Not yet reviewed by an engineer or built. | [`hardware/zener/`](hardware/zener), [`hardware/`](hardware) |
+| **3D models** | Concept models of the demonstrator (6U), the operational IoT satellite (12U) and a broadband satellite, plus both boards. STEP and GLB files. | [`hardware/3d/`](hardware/3d) |
+| **Capacity model** | Messages per satellite per pass, and how many devices a fleet can carry | [`forgestar/capacity.py`](forgestar/capacity.py), [`sim/capacity_study.py`](sim/capacity_study.py) |
 | **Business** | Financial model (Stages 0–3, stress scenarios, monthly cash, 30% ownership check) | [`model/`](model) |
-| **Readiness** | 30 outside milestones (ICASA/ITU, funding, partners, customers), TRL tracking, launch readiness report | [`readiness/`](readiness), [`docs/LAUNCH_READINESS.md`](docs/LAUNCH_READINESS.md) |
+| **Readiness** | 40 outside milestones (ICASA/ITU, funding, partners, customers), TRL tracking, launch readiness report | [`readiness/`](readiness), [`docs/LAUNCH_READINESS.md`](docs/LAUNCH_READINESS.md) |
 | **Strategy** | The full strategy; the PDF is built from it | [`docs/strategy.md`](docs/strategy.md), [`output/`](output) |
 
 ![ThingsBoard operations dashboard (live run)](docs/img/thingsboard-operations.png)
@@ -139,6 +141,8 @@ For 64-bit ARM, use `fprime-util generate aarch64-linux && fprime-util build aar
 
 ```bash
 python3 sim/equatorial_study.py          # Stage 3 constellation and gateway design
+python3 sim/antenna_trade.py             # payload antenna options, with gain tied to beam shape
+python3 sim/capacity_study.py            # messages per pass and per device per day
 python3 sim/coverage_map.py [--stage4]   # global coverage map -> docs/img/coverage-stage3.png
 python3 model/financial_model.py         # financial model and stress tests
 python3 scripts/launch_readiness.py      # docs/LAUNCH_READINESS.md
@@ -162,15 +166,25 @@ CI runs all of this on every push: the Python tests and analysis, the platform i
 | **Equity to Stage 3** | ~$50M |
 | **Delivery measured on the Stage 3 design (live run)** | 95% of satellite messages within 9 minutes |
 | **Link margin** | Decodes at Eb/N0 ≈ 2.5 dB with CCSDS RS + convolutional coding |
-| **First payload in orbit** | ~Apr 2029 on the fast track (hosted payload); own satellite ~Jun 2029 |
+| **First payload in orbit** | ~Feb 2029 on the fast track (hosted payload); ~May 2028 if everything runs in parallel with money up front; own satellite ~Jun 2029 |
+| **Service antenna** | Isoflux, ~8 W RF: devices reach a satellite from 16° elevation. Needs ~38 W from the bus during passes (a 12U) |
+| **Demonstrator antenna** | Simple patch: 47° elevation (34° with deep coverage mode). Poor coverage by design |
+| **Capacity** | ~6 messages a second per NB-IoT carrier per satellite. Stage 3 carries ~1.4 messages per device per day at 330,000 devices |
+| **Year-6 EBITDA** | $11.3M base (our satellites carry ~42% of IoT devices, the rest stay on the resale partner); $12.6M with a compact protocol of our own |
 
 ![Where FORGE STAR reaches: Stage 3 coverage](docs/img/coverage-stage3.png)
 
+![Operational IoT satellite concept (12U)](docs/img/3d-sat-iot-12u-crop.png)
+
+![IoT test device, routed](docs/img/iot_node-top.png)
+
 ## Hardware: build, buy, bridge
 
-Boards are designed with [heypcb.ai](https://heypcb.ai) and checked by the in-house KiCad pipeline in [`hardware/`](hardware). The gaps heypcb.ai does not cover are bridged with flight-heritage suppliers and mature tools: hosted-payload platforms or the bus partner for structure, thermal and integration; flight-heritage S/X-band radios; Antenna Magus and openEMS for antennas; SPENVIS and iThemba LABS (Cape Town) for radiation. Details, list prices and what still needs a quote are in section 09 of the brief and items V1–V7 of the verification register.
+Boards are written as code and checked with KiCad. The two current boards live in [`hardware/zener/`](hardware/zener), with fabrication files for review in each board's `fab/` folder; [heypcb.ai](https://heypcb.ai) remains an option for later boards. GitHub CI autoroutes the boards with Freerouting (`.github/workflows/route-boards.yml`). The gaps heypcb.ai does not cover are bridged with flight-heritage suppliers and mature tools: hosted-payload platforms or the bus partner for structure, thermal and integration; flight-heritage S/X-band radios; Antenna Magus and openEMS for antennas; SPENVIS and iThemba LABS (Cape Town) for radiation. Details, list prices and what still needs a quote are in section 09 of the brief and items V1–V7 of the verification register.
 
 ## Status
+
+**Updated November 2026.** An independent review found the first antenna figures too optimistic. The link budget now ties antenna gain to beam shape, the simulations use the downlink limit, and the financial model is tied to fleet capacity.
 
 The software and ground platform are at TRL 4–5. Everything that can be built without hardware is in place; the remaining software (payload radio base station, real drivers, bus integration) needs the lab kit and bus partner. Payload hardware, the bus partner, spectrum licensing, funding and customers are the work still ahead. See [`docs/LAUNCH_READINESS.md`](docs/LAUNCH_READINESS.md) for the scorecard, critical path and blockers.
 
