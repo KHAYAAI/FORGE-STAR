@@ -1,3 +1,2 @@
-      1 [starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; 1 spokes connected to isolated island)
-      5 [starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
-     11 [unconnected_items]: Missing connection between items
+      1 [clearance]: Clearance violation (pad clearance 0.6000 mm; actual 0.2659 mm)
+      1 [solder_mask_bridge]: Front solder mask aperture bridges items with different nets
