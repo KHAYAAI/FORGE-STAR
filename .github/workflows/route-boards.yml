@@ -7,9 +7,8 @@ on:
   push:
     branches: [main]
     paths:
-      - "hardware/zener/boards/**"
-      - "hardware/zener/tools/**"
-      - ".github/workflows/route-boards.yml"
+      - "hardware/zener/boards/*/placement.json"
+      - "hardware/zener/boards/*/*.zen"
 
 jobs:
   route:

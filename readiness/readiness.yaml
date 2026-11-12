@@ -69,8 +69,8 @@ items:
   # --- Payload hardware and bridging partners (see docs/brief.md and register V1–V7) ---
   - {id: H1, ws: hardware, title: "Payload interface board: engineer review, fab 5, bring up with libforge", start: 0, months: 2, owner: TBD, status: doing,
      note: "Nov 2026: designed in Zener and SKiDL, placed, autorouted in CI with every connection made. Not yet reviewed by an engineer or fabricated."}
-  - {id: H8, ws: hardware, title: "IoT test device board: finish routing, confirm NTN module pin map (Quectel CC660D-LS), review, fab", start: 0, months: 3, owner: TBD, status: doing, reverify: true,
-     note: "Nov 2026: schematic and placement done, routing in progress. Needed for the lab test-bed and customer trials."}
+  - {id: H8, ws: hardware, title: "IoT test device board: confirm NTN module pin map (Quectel CC660D-LS), engineer review, fab", start: 0, months: 3, owner: TBD, status: doing, reverify: true,
+     note: "Nov 2026: schematic, placement and autorouting done, design check clean. Not yet reviewed or fabricated. Needed for the lab test-bed and customer trials."}
   - {id: H2, ws: hardware, title: "Hosted-payload RFQ to a host platform (Loft Orbital or D-Orbit) alongside the bus RFQ", start: 1, months: 3, owner: TBD, status: todo, reverify: true}
   - {id: H3, ws: hardware, title: "RF vendor quotes: S-band SDR + PA, X-band transmitter, S-band patch (EnduroSat, Alén, IQ Spacecom)", start: 1, months: 2, owner: TBD, status: todo, reverify: true}
   - {id: H4, ws: hardware, title: "SPENVIS radiation analysis for the 550 km 45°/10° orbits; parts selection", start: 1, months: 1, owner: TBD, status: todo}

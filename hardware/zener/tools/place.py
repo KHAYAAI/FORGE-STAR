@@ -85,7 +85,7 @@ def stage_outline(bdir: Path) -> int:
         for px, py in ((0, 0), (w, 0), (w, h), (0, h)):
             pts.append(pcbnew.VECTOR2I(mm(OX + px), mm(OY + py)))
         zone.AddPolygon(pts)
-        zone.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL)
+        zone.SetPadConnection(pcbnew.ZONE_CONNECTION_FULL)
         board.Add(zone)
     board.Save(str(path))
     return 0

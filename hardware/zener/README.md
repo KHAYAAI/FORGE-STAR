@@ -37,15 +37,17 @@ python3 tools/import_kicad_part.py boards/iot_node RF_GSM:BC66
 ```bash
 pcb layout --no-open boards/iot_node/iot_node.zen   # creates or updates the KiCad board (needs KiCad 10)
 python3 tools/place.py boards/iot_node              # positions from placement.json, outline, ground pours
-FREEROUTING_JAR=... python3 tools/route.py boards/iot_node   # autoroute (not yet run)
+FREEROUTING_JAR=... python3 tools/route.py boards/iot_node   # autoroute + ground stitching (runs in GitHub CI)
 ```
 
 | Board | Size | Placement | Routing |
 |---|---|---|---|
-| Payload interface board | 58 x 40 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 51 connections open |
-| IoT test device | 84 x 45 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 101 connections open |
+| Payload interface board | 58 x 40 mm, 4 layers | Done | Done: every connection made, KiCad design check reports 0 errors |
+| IoT test device | 84 x 45 mm, 4 layers | Done | Done: every connection made, KiCad design check reports 0 errors |
 
 Both boards have four grounded M2.5 mounting holes and three fiducials.
+
+Gerber, drill and placement files are in each board's `fab/` folder. They are for review, not yet for ordering.
 
 3D pictures are in `docs/img/` (`pib-3d.png`, `iot_node-3d.png`) and 3D STEP files sit next to each board.
 Several chips show as bare pads because KiCad's 3D model library is not installed here.
@@ -64,7 +66,7 @@ Several chips show as bare pads because KiCad's 3D model library is not installe
 
 ## Open items before fabrication
 
-- **Routing:** neither board is routed. Run `tools/route.py` with Freerouting, or route by hand in KiCad.
+- **Autorouted, not reviewed.** Routing was done by Freerouting in CI (`.github/workflows/route-boards.yml`). Power traces use the default width, decoupling and RF traces are not hand-placed, and silkscreen has cosmetic warnings.
 - **CC660D-LS pin map:** get the hardware design manual from Quectel and compare every pin.
 - **RF:** antenna traces need 50 ohm controlled impedance; the matching network values are placeholders that need
   measurement on a network analyser.

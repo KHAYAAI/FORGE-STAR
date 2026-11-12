@@ -20,11 +20,11 @@ subsystems:
      evidence: "Trade study: patch (37° mask) vs isoflux (16–21°) vs array. Independent review found the patch gain and beamwidth inconsistent, so the masks are optimistic",
      next: "openEMS model of isoflux antenna, then prototype + range measurement"}
   - {name: "Payload interface board (hardware/pib)", trl: 3, needed_for_launch: 6,
-     evidence: "Schematic as code (Zener and SKiDL), placed, autorouted in CI with every connection made; 4 layers, 58 x 40 mm; 3D model. Not reviewed or built",
+     evidence: "Schematic as code (Zener and SKiDL), placed, autorouted in CI with every connection made, design check 0 errors; 4 layers, 58 x 40 mm; fab files and 3D model. Not reviewed or built",
      next: "Engineer review, fab 5 boards, bring-up with libforge"}
   - {name: "IoT test device board (hardware/zener/boards/iot_node)", trl: 2, needed_for_launch: 5,
-     evidence: "Schematic as code builds clean; placed on 84 x 45 mm, 4 layers; routing in progress; BC66 footprint (terrestrial NB-IoT), NTN module pin map unconfirmed",
-     next: "Finish routing; confirm the CC660D-LS pin map with Quectel; review; fab; run the device SDK on it"}
+     evidence: "Schematic as code builds clean; placed and autorouted on 84 x 45 mm, 4 layers, every connection made, design check 0 errors; BC66 footprint (terrestrial NB-IoT), NTN module pin map unconfirmed",
+     next: "Confirm the CC660D-LS pin map with Quectel; engineer review; fab; run the device SDK on it"}
   - {name: "Device SDK (forge_device, C99)", trl: 4, needed_for_launch: 5,
      evidence: "Queue, re-send until acked, expiry, overflow handling, CRC uplink packets; tested with Python-made ACK frames",
      next: "Port to a Rel-17 NB-IoT NTN module (e.g. on a dev kit); pilot with FORGE Freight trackers"}

@@ -132,7 +132,7 @@ gantt
   Mobile operator wholesale agreement :V2, 2032-01-01, 364d
   section Payload hardware and bridging partners
   Payload interface board - engineer review, fab 5 :active, H1, 2026-12-01, 60d
-  IoT test device board - finish routing, confirm  :active, H8, 2026-12-01, 91d
+  IoT test device board - confirm NTN module pin m :active, H8, 2026-12-01, 91d
   Hosted-payload RFQ to a host platform :H2, 2027-01-01, 91d
   RF vendor quotes - S-band SDR + PA, X-band trans :H3, 2027-01-01, 60d
   SPENVIS radiation analysis for the 550 km 45°/10 :H4, 2027-01-01, 30d
@@ -153,7 +153,7 @@ gantt
 - **S8** Bring-into-use: first satellite transmitting under the filing
 - **O2** Incorporate FORGE STAR entity; shareholder agreement; HDG verification
 - **F1** TIA/DSI grant application: NB-IoT NTN lab
-- **H8** IoT test device board: finish routing, confirm NTN module pin map (Quectel CC660D-LS), review, fab — Nov 2026: schematic and placement done, routing in progress. Needed for the lab test-bed and customer trials.
+- **H8** IoT test device board: confirm NTN module pin map (Quectel CC660D-LS), engineer review, fab — Nov 2026: schematic, placement and autorouting done, design check clean. Not yet reviewed or fabricated. Needed for the lab test-bed and customer trials.
 - **H2** Hosted-payload RFQ to a host platform (Loft Orbital or D-Orbit) alongside the bus RFQ
 - **H3** RF vendor quotes: S-band SDR + PA, X-band transmitter, S-band patch (EnduroSat, Alén, IQ Spacecom)
 - **H5** iThemba LABS: confirm proton SEE test access; book slot for processor/memory/SDR
