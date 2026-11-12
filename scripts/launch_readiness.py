@@ -39,6 +39,7 @@ def main():
     items = rd["items"]; by = {i["id"]: i for i in items}
     sched = tracker.schedule(items)
     fast = tracker.schedule(tracker.apply(items, rd["scenarios"]["fast_track"]))
+    par = tracker.schedule(tracker.apply(items, rd["scenarios"]["all_parallel"]))
     date = lambda m: tracker.add_months(start, m).strftime("%b %Y")
 
     L = ["# FORGE STAR launch readiness", "",
@@ -53,11 +54,12 @@ def main():
     rf = param_status(); rf_ok = sum(r[3] in DONE for r in rf)
     L += ["## Headline", "",
           f"- **First payload in orbit (hosted payload):** earliest **{date(sched['R3']['end'])}** as planned, "
-          f"**{date(fast['R3']['end'])}** on the fast track.",
+          f"**{date(fast['R3']['end'])}** on the fast track, **{date(par['R3']['end'])}** if everything runs in parallel "
+          "with bridge money up front and a launch slot available.",
           f"- **Early service (6–12 satellites):** earliest **{date(sched['V1']['end'])}** as planned, "
           f"**{date(fast['V1']['end'])}** on the fast track.",
           f"- **Engineering:** {eng_ready}/{len(trl['subsystems'])} subsystems at the maturity launch needs. "
-          "Software and ground are ahead; payload radio, antenna, board and bus are the gap.",
+          "Software and ground are ahead; payload radio, antenna and bus are the gap. Both circuit boards are routed but not yet reviewed or built.",
           f"- **Outside work:** {sum(d for d, _ in ws_done.values())}/{len(items)} milestones done. "
           "Nothing that needs a person (licence, partner, investor, customer) has happened yet.",
           f"- **Confirmed facts:** {claims_ok}/{len(reg['claims'])} claims confirmed by counsel or quotes; "
@@ -73,13 +75,14 @@ def main():
     rows = [
         ("Software & ground platform", sw_score,
          f"{len(sw)} subsystems at TRL 4–5 of the 5–7 launch needs (flight core, F´, link layer, gateway, platform, constellation design)"),
-        ("Payload hardware (radio, antenna, board)", 0.15, "Analysis + design only; no hardware built"),
+        ("Payload hardware (radio, antenna, board)", 0.25,
+         "Two boards designed and autorouted with a clean design check; antenna and link budget corrected; nothing reviewed by an engineer or built"),
         ("Satellite bus & launch", 0.0, "No bus contract, no launch slot"),
-        ("Permission to transmit (ICASA/ITU)", ws_score("spectrum"), "Counsel not yet briefed; no filing"),
+        ("Permission to transmit (ICASA/ITU)", ws_score("spectrum"), "Counsel not yet briefed; no filing. I-ECNS applications open only when ICASA invites them"),
         ("Ownership (30% HDG)", ws_score("ownership"), "Cap table modelled; entity not set up"),
         ("Revenue before satellites", ws_score("commercial"), "Platform ready; no LOIs or reseller deal signed"),
         ("Funding", ws_score("funding"), "No grant or seed yet; seed needed by month 12"),
-        ("Proof in the lab", ws_score("lab"), "Plan ready; needs grant + test licence"),
+        ("Proof in the lab", ws_score("lab"), "Plan ready; cabled test-bed needs the grant (or bridge money), not the test licence"),
     ]
     L += ["## Scorecard", "", "| Area | Status | Evidence |", "|---|---|---|"]
     L += [f"| {n} | {light(sc)} | {e} |" for n, sc, e in rows]
@@ -111,18 +114,20 @@ def main():
           "| Antenna | patch + deep coverage mode for the demo (34° mask); isoflux with ~8 W for service (16° mask, ~38 W from the bus) | `sim/antenna_trade.py` |",
           "| Capacity | ~6 messages/s per carrier per satellite; Stage 3 carries ~1.4 messages per device per day at 330k devices | `sim/capacity_study.py` |",
           f"| Year-6 revenue (base / IoT at $1 / no sovereign deal) | ${base[-1]['revenue']/1e6:.1f}M / ${price[-1]['revenue']/1e6:.1f}M / ${nosov[-1]['revenue']/1e6:.1f}M | `model/` |",
+          f"| Year-6 EBITDA; IoT devices on our own satellites | ${base[-1]['ebitda']/1e6:.1f}M; {base[-1]['iot_own_network_share_pct']:.0f}% (rest on the resale partner) | `model/` |",
           f"| Equity to Stage 3 | ${sum(r['equity_in'] for r in base)/1e6:.1f}M | `model/` |",
           "| Seed timing | close by month 12: raise on signed LOIs (earliest ~month 11) | `readiness/` |"]
 
     # --- blockers ---
     L += ["", "## Blockers that only people can clear", "",
           "1. **Spectrum counsel + ICASA pre-application meeting** (S1, S2). Starts the longest chain.",
-          "2. **Bus partner quote and power budget** (R1): confirms 25–40 W for the isoflux antenna.",
+          "2. **Bus partner quote and power budget** (R1): confirms about 38 W during passes for the isoflux antenna (a 12U).",
           "3. **Signed LOIs** from FORGE Freight, the maritime venture and one mining group (C1): unlocks the seed.",
-          "4. **TIA/DSI grant** for the lab (F1) and an **ICASA test licence** (S3).",
+          "4. **TIA/DSI grant or bridge money** for the lab (F1): now on the critical path. The **ICASA test licence** (S3) is only needed for over-the-air tests.",
           "5. **SA government capacity contract** (F4): without it year-6 revenue falls to "
           f"${nosov[-1]['revenue']/1e6:.1f}M.",
-          "6. **Repo actions:** approve Freerouting (board routing); switch the GitHub default branch to `main`.",
+          "6. **Engineer review** of both routed boards before fabrication, and Quectel's pin map for the satellite module (H1, H8).",
+          "7. **Repo actions:** make the GitHub repo private (it holds confidential plans); switch the default branch to `main`.",
           "", f"Full detail: `readiness/STATUS.md`, `docs/verification/VERIFY.md`, `model/results/summary.md`."]
     out = ROOT / "docs/LAUNCH_READINESS.md"; out.write_text("\n".join(L) + "\n")
     print("\n".join(L[:40]))
