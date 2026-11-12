@@ -5,15 +5,15 @@ A battery-powered NB-IoT node for the lab test-bed and field trials. It runs the
 (flight/libforge forge_device: queue, re-send until acked, expiry).
 
 - Quectel BC66 footprint NB-IoT module. BC66 is terrestrial NB-IoT. For satellite (NTN) tests the
-  plan is to fit an NTN module in the same footprint (candidate: Quectel CC660D-LS). Pin
-  compatibility is NOT yet verified against the datasheets.
+  plan is to fit an NTN module in the same footprint (candidate: Quectel CC660D-LS, same outline
+  and interface set). The pin-by-pin map is NOT yet confirmed against Quectel's hardware manual.
 - u-blox MAX-M10S GNSS (position and time, which NTN devices need for Doppler correction)
 - STM32L432KC MCU, TMP117 temperature sensor
 - 1-cell LiPo with USB-C charging (MCP73831, 500 mA)
 - All logic runs at 1.8 V to match the module's I/O voltage, so no level shifters
 
 Connectors
-  USB-C: charging only        BAT: JST-PH, 1 = BAT+, 2 = GND (check your battery's polarity)
+  USB-C: charging only        BAT: JST-PH, 1 = BAT+, 2 = GND (reverse-polarity protected)
   SWD:   1 +1V8  2 SWDIO  3 SWCLK  4 NRST  5 GND
   DBG:   1 VDD_EXT  2 MOD_TXD  3 MOD_RXD  4 DBG_TXD  5 DBG_RXD  6 GND (module logs, firmware update)
   ANT_NB, ANT_GNSS: U.FL
@@ -28,7 +28,9 @@ Led = Module("@stdlib/generics/Led.zen")
 PinHeader = Module("@stdlib/generics/PinHeader.zen")
 
 VBUS = Power("VBUS", voltage="5V")
+BAT_RAW = Power("BAT_RAW", voltage="3.0V to 4.2V")
 BAT = Power("BAT", voltage="3.0V to 4.2V")
+VSYS = Power("VSYS", voltage="3.0V to 4.2V")
 V_MOD = Power("V_MOD", voltage="3.3V")
 V18 = Power("+1V8", voltage="1.8V")
 VDD_EXT = Power("VDD_EXT", voltage="1.8V")
@@ -107,11 +109,29 @@ Component(
     symbol=Symbol(library="parts/Conn_01x02.kicad_sym"),
     part=Part(mpn="S2B-PH-K-S", manufacturer="JST"),
     prefix="J",
-    pins={"Pin_1": BAT, "Pin_2": GND},
+    pins={"Pin_1": BAT_RAW, "Pin_2": GND},
+)
+
+# Reverse-polarity protection: the P-FET only turns on when the battery is the right way round.
+Component(
+    name="Q_REV",
+    symbol=Symbol(library="parts/AO3401A.kicad_sym"),
+    part=Part(mpn="AO3401A", manufacturer="Alpha & Omega Semiconductor"),
+    prefix="Q",
+    pins={"D": BAT_RAW, "S": BAT, "G": GND},
+)
+
+# Power switch. The charger stays on the battery side, so the battery charges with the switch off.
+Component(
+    name="SW_PWR",
+    symbol=Symbol(library="parts/SW_SPDT.kicad_sym"),
+    part=Part(mpn="PCM12SMTR", manufacturer="C&K"),
+    prefix="SW",
+    pins={"B": BAT, "A": VSYS, "C": NotConnected()},
 )
 
 # Battery voltage to the MCU ADC: 4.2 V * 470k / (1M + 470k) = 1.34 V
-Resistor(name="R_VBAT_TOP", value="1Mohm", package="0402", P1=BAT, P2=VBAT_SENSE)
+Resistor(name="R_VBAT_TOP", value="1Mohm", package="0402", P1=VSYS, P2=VBAT_SENSE)
 Resistor(name="R_VBAT_BOT", value="470kohm", package="0402", P1=VBAT_SENSE, P2=GND)
 Capacitor(name="C_VBAT_SENSE", value="100nF", package="0402", P1=VBAT_SENSE, P2=GND)
 
@@ -120,17 +140,17 @@ Component(
     name="REG_MOD",
     symbol=Symbol(library="parts/AP2112K-3.3.kicad_sym"),
     part=Part(mpn="AP2112K-3.3TRG1", manufacturer="Diodes Incorporated"),
-    pins={"VIN": BAT, "EN": BAT, "GND": GND, "VOUT": V_MOD},
+    pins={"VIN": VSYS, "EN": VSYS, "GND": GND, "VOUT": V_MOD},
 )
-Capacitor(name="C_REG_MOD_IN", value="1uF", package="0603", P1=BAT, P2=GND)
+Capacitor(name="C_REG_MOD_IN", value="1uF", package="0603", P1=VSYS, P2=GND)
 Capacitor(name="C_REG_MOD_OUT", value="1uF", package="0603", P1=V_MOD, P2=GND)
 Component(
     name="REG_1V8",
     symbol=Symbol(library="parts/AP2112K-1.8.kicad_sym"),
     part=Part(mpn="AP2112K-1.8TRG1", manufacturer="Diodes Incorporated"),
-    pins={"VIN": BAT, "EN": BAT, "GND": GND, "VOUT": V18},
+    pins={"VIN": VSYS, "EN": VSYS, "GND": GND, "VOUT": V18},
 )
-Capacitor(name="C_REG_1V8_IN", value="1uF", package="0603", P1=BAT, P2=GND)
+Capacitor(name="C_REG_1V8_IN", value="1uF", package="0603", P1=VSYS, P2=GND)
 Capacitor(name="C_REG_1V8_OUT", value="1uF", package="0603", P1=V18, P2=GND)
 
 # NB-IoT module
@@ -203,7 +223,7 @@ Component(
 Resistor(name="R_PSM_B", value="4.7kohm", package="0402", P1=PSM_CTL, P2=PSM_B)
 Resistor(name="R_PSM_PD", value="47kohm", package="0402", P1=PSM_B, P2=GND)
 
-# SIM (micro-SIM). ESD protection on the SIM lines is not fitted in rev A.
+# SIM (micro-SIM) with a TVS array on the three signal lines
 Component(
     name="J_SIM",
     symbol=Symbol(library="parts/SIM_Card_Shielded.kicad_sym"),
@@ -219,6 +239,13 @@ Component(
         "SH": GND,
     },
 )
+Component(
+    name="ESD_SIM",
+    symbol=Symbol(library="parts/SP0503BAHT.kicad_sym"),
+    part=Part(mpn="SP0503BAHTG", manufacturer="Littelfuse"),
+    prefix="D",
+    pins={"A": GND, "K1": SIM_RST, "K2": SIM_CLK, "K3": SIM_DATA},
+)
 Capacitor(name="C_SIM", value="100nF", package="0402", P1=SIM_VDD, P2=GND)
 
 # Antenna feed with a pi matching network: series 0 ohm fitted, shunt parts left unfitted.
@@ -233,7 +260,7 @@ Component(
     pins={"In": RF_ANT, "Ext": GND},
 )
 
-# GNSS. VIO_SEL to GND selects 1.8 V I/O (verify against the MAX-M10S data sheet).
+# GNSS. VIO_SEL to GND selects 1.8 V I/O (u-blox MAX-M10S integration manual).
 Component(
     name="GNSS",
     symbol=Symbol(library="parts/MAX-M10S.kicad_sym"),
@@ -333,6 +360,7 @@ Component(
         "SCL": I2C_SCL,
         "SDA": I2C_SDA,
         "ALERT": NotConnected(),
+        "EP": GND,
     },
 )
 Capacitor(name="C_TMP", value="100nF", package="0402", P1=V18, P2=GND)

@@ -2,45 +2,48 @@ Legend:
  ■  Plenty available / easy to source         ■  House component       
  ■  Limited inventory / harder to source      ■  DNP (Do Not Populate) 
  ■  Insufficient stock / hard to source                                
-┌──────┬──────────────────────────┬───────────────────┬─────────────────────┬─────────────────────────────────┬────────────────────────────────┐
-│ Qty  ┆ Designators              ┆ MPN               ┆ Manufacturer        ┆ Package                         ┆ Description                    │
-╞══════╪══════════════════════════╪═══════════════════╪═════════════════════╪═════════════════════════════════╪════════════════════════════════╡
-│    2 ┆ C3,C10                   ┆                   ┆                     ┆ 0603                            ┆ 4.7uF 6.3V                     │
-│    1 ┆ C4                       ┆                   ┆                     ┆ 0603                            ┆ 4.7uF 10V                      │
-│    7 ┆ C5,C8,C9,C12,C20,C21,C23 ┆                   ┆                     ┆ 0402                            ┆ 100nF 6.3V                     │
-│    1 ┆ C6                       ┆                   ┆                     ┆ 0402                            ┆ 1uF 6.3V                       │
-│    1 ┆ C7                       ┆                   ┆                     ┆ 0402                            ┆ 10nF                           │
-│    1 ┆ C11                      ┆                   ┆                     ┆ 0402                            ┆ 22pF 6.3V                      │
-│    1 ┆ C13                      ┆                   ┆                     ┆ 0402                            ┆ 100pF 6.3V                     │
-│    1 ┆ C14                      ┆                   ┆                     ┆ 0805                            ┆ 22uF 6.3V                      │
-│    2 ┆ C15,C22                  ┆                   ┆                     ┆ 0402                            ┆ 100nF                          │
-│    4 ┆ C16,C17,C18,C19          ┆                   ┆                     ┆ 0603                            ┆ 1uF 6.3V                       │
-│    1 ┆ D1                       ┆                   ┆                     ┆ 0603                            ┆ LED ORANGE                     │
-│    1 ┆ D2                       ┆                   ┆                     ┆ 0603                            ┆ LED RED                        │
-│    2 ┆ J1,J2                    ┆ U.FL-R-SMT-1(10)  ┆ Hirose              ┆                                 ┆                                │
-│    1 ┆ J3                       ┆ S2B-PH-K-S        ┆ JST                 ┆                                 ┆                                │
-│    1 ┆ J4                       ┆                   ┆                     ┆ PinHeader_1x06_P2.54mm_Vertical ┆ 2.54mm 6 x 1 THT Vertical Male │
-│    1 ┆ J5                       ┆ SF53S006VCBR2000  ┆ JAE                 ┆                                 ┆                                │
-│    1 ┆ J6                       ┆                   ┆                     ┆ PinHeader_1x05_P2.54mm_Vertical ┆ 2.54mm 5 x 1 THT Vertical Male │
-│    1 ┆ J7                       ┆ USB4125-GF-A      ┆ GCT                 ┆                                 ┆                                │
-│    1 ┆ L1                       ┆                   ┆                     ┆ 0402                            ┆ 27nH                           │
-│    3 ┆ Q1,Q2,Q3                 ┆ MMBT3904          ┆ onsemi              ┆                                 ┆                                │
-│    1 ┆ R1                       ┆                   ┆                     ┆ 0402                            ┆ 0                              │
-│    1 ┆ R2                       ┆                   ┆                     ┆ 0402                            ┆ 10k                            │
-│    2 ┆ R3,R4                    ┆                   ┆                     ┆ 0402                            ┆ 5.1k                           │
-│    2 ┆ R5,R8                    ┆                   ┆                     ┆ 0402                            ┆ 1k                             │
-│    1 ┆ R6                       ┆                   ┆                     ┆ 0402                            ┆ 2k                             │
-│    1 ┆ R7                       ┆                   ┆                     ┆ 0402                            ┆ 10                             │
-│    5 ┆ R9,R11,R13,R15,R16       ┆                   ┆                     ┆ 0402                            ┆ 4.7k                           │
-│    3 ┆ R10,R12,R14              ┆                   ┆                     ┆ 0402                            ┆ 47k                            │
-│    1 ┆ R17                      ┆                   ┆                     ┆ 0402                            ┆ 470k                           │
-│    1 ┆ R18                      ┆                   ┆                     ┆ 0402                            ┆ 1M                             │
-│    1 ┆ U1                       ┆ MCP73831T-2ACI/OT ┆ Microchip           ┆                                 ┆                                │
-│    1 ┆ U2                       ┆ MAX-M10S-00B      ┆ u-blox              ┆                                 ┆                                │
-│    1 ┆ U3                       ┆ STM32L432KCU6     ┆ STMicroelectronics  ┆                                 ┆                                │
-│    1 ┆ U4                       ┆ BC66NB-04-STD     ┆ Quectel             ┆                                 ┆                                │
-│    1 ┆ U5                       ┆ AP2112K-1.8TRG1   ┆ Diodes Incorporated ┆                                 ┆                                │
-│    1 ┆ U6                       ┆ AP2112K-3.3TRG1   ┆ Diodes Incorporated ┆                                 ┆                                │
-│    1 ┆ U7                       ┆ TMP117AIDRVR      ┆ Texas Instruments   ┆                                 ┆                                │
-│    2 ┆ C1,C2                    ┆                   ┆                     ┆ 0402                            ┆ 1pF                            │
-└──────┴──────────────────────────┴───────────────────┴─────────────────────┴─────────────────────────────────┴────────────────────────────────┘
+┌──────┬──────────────────────────┬───────────────────┬─────────────────────────────┬─────────────────────────────────┬─────────────────────────────────────────────────────────────┐
+│ Qty  ┆ Designators              ┆ MPN               ┆ Manufacturer                ┆ Package                         ┆ Description                                                 │
+╞══════╪══════════════════════════╪═══════════════════╪═════════════════════════════╪═════════════════════════════════╪═════════════════════════════════════════════════════════════╡
+│    2 ┆ C3,C10                   ┆                   ┆                             ┆ 0603                            ┆ 4.7uF 6.3V                                                  │
+│    1 ┆ C4                       ┆                   ┆                             ┆ 0603                            ┆ 4.7uF 10V                                                   │
+│    7 ┆ C5,C8,C9,C12,C20,C21,C23 ┆                   ┆                             ┆ 0402                            ┆ 100nF 6.3V                                                  │
+│    1 ┆ C6                       ┆                   ┆                             ┆ 0402                            ┆ 1uF 6.3V                                                    │
+│    1 ┆ C7                       ┆                   ┆                             ┆ 0402                            ┆ 10nF                                                        │
+│    1 ┆ C11                      ┆                   ┆                             ┆ 0402                            ┆ 22pF 6.3V                                                   │
+│    1 ┆ C13                      ┆                   ┆                             ┆ 0402                            ┆ 100pF 6.3V                                                  │
+│    1 ┆ C14                      ┆                   ┆                             ┆ 0805                            ┆ 22uF 6.3V                                                   │
+│    2 ┆ C15,C22                  ┆                   ┆                             ┆ 0402                            ┆ 100nF                                                       │
+│    4 ┆ C16,C17,C18,C19          ┆                   ┆                             ┆ 0603                            ┆ 1uF 6.3V                                                    │
+│    1 ┆ D1                       ┆ SP0503BAHTG       ┆ Littelfuse                  ┆                                 ┆ TVS Diode Array, 5.5V Standoff, 3 Channels, SOT-143 package │
+│    1 ┆ D2                       ┆                   ┆                             ┆ 0603                            ┆ LED ORANGE                                                  │
+│    1 ┆ D3                       ┆                   ┆                             ┆ 0603                            ┆ LED RED                                                     │
+│    2 ┆ J1,J2                    ┆ U.FL-R-SMT-1(10)  ┆ Hirose                      ┆                                 ┆                                                             │
+│    1 ┆ J3                       ┆ S2B-PH-K-S        ┆ JST                         ┆                                 ┆                                                             │
+│    1 ┆ J4                       ┆                   ┆                             ┆ PinHeader_1x06_P2.54mm_Vertical ┆ 2.54mm 6 x 1 THT Vertical Male                              │
+│    1 ┆ J5                       ┆ SF53S006VCBR2000  ┆ JAE                         ┆                                 ┆                                                             │
+│    1 ┆ J6                       ┆                   ┆                             ┆ PinHeader_1x05_P2.54mm_Vertical ┆ 2.54mm 5 x 1 THT Vertical Male                              │
+│    1 ┆ J7                       ┆ USB4125-GF-A      ┆ GCT                         ┆                                 ┆                                                             │
+│    1 ┆ L1                       ┆                   ┆                             ┆ 0402                            ┆ 27nH                                                        │
+│    3 ┆ Q1,Q2,Q3                 ┆ MMBT3904          ┆ onsemi                      ┆                                 ┆                                                             │
+│    1 ┆ Q4                       ┆ AO3401A           ┆ Alpha & Omega Semiconductor ┆                                 ┆ -4.0A Id, -30V Vds, P-Channel MOSFET, SOT-23                │
+│    1 ┆ R1                       ┆                   ┆                             ┆ 0402                            ┆ 0                                                           │
+│    1 ┆ R2                       ┆                   ┆                             ┆ 0402                            ┆ 10k                                                         │
+│    2 ┆ R3,R4                    ┆                   ┆                             ┆ 0402                            ┆ 5.1k                                                        │
+│    2 ┆ R5,R8                    ┆                   ┆                             ┆ 0402                            ┆ 1k                                                          │
+│    1 ┆ R6                       ┆                   ┆                             ┆ 0402                            ┆ 2k                                                          │
+│    1 ┆ R7                       ┆                   ┆                             ┆ 0402                            ┆ 10                                                          │
+│    5 ┆ R9,R11,R13,R15,R16       ┆                   ┆                             ┆ 0402                            ┆ 4.7k                                                        │
+│    3 ┆ R10,R12,R14              ┆                   ┆                             ┆ 0402                            ┆ 47k                                                         │
+│    1 ┆ R17                      ┆                   ┆                             ┆ 0402                            ┆ 470k                                                        │
+│    1 ┆ R18                      ┆                   ┆                             ┆ 0402                            ┆ 1M                                                          │
+│    1 ┆ SW1                      ┆ PCM12SMTR         ┆ C&K                         ┆                                 ┆ Switch, single pole double throw                            │
+│    1 ┆ U1                       ┆ MCP73831T-2ACI/OT ┆ Microchip                   ┆                                 ┆                                                             │
+│    1 ┆ U2                       ┆ MAX-M10S-00B      ┆ u-blox                      ┆                                 ┆                                                             │
+│    1 ┆ U3                       ┆ STM32L432KCU6     ┆ STMicroelectronics          ┆                                 ┆                                                             │
+│    1 ┆ U4                       ┆ BC66NB-04-STD     ┆ Quectel                     ┆                                 ┆                                                             │
+│    1 ┆ U5                       ┆ AP2112K-1.8TRG1   ┆ Diodes Incorporated         ┆                                 ┆                                                             │
+│    1 ┆ U6                       ┆ AP2112K-3.3TRG1   ┆ Diodes Incorporated         ┆                                 ┆                                                             │
+│    1 ┆ U7                       ┆ TMP117AIDRVR      ┆ Texas Instruments           ┆                                 ┆                                                             │
+│    2 ┆ C1,C2                    ┆                   ┆                             ┆ 0402                            ┆ 1pF                                                         │
+└──────┴──────────────────────────┴───────────────────┴─────────────────────────────┴─────────────────────────────────┴─────────────────────────────────────────────────────────────┘

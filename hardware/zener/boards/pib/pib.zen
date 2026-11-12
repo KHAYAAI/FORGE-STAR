@@ -167,6 +167,7 @@ Component(
         "SCL": I2C_SCL,
         "SDA": I2C_SDA,
         "ALERT": NotConnected(),
+        "EP": GND,
     },
 )
 Capacitor(name="C_TMP", value="100nF", package="0603", P1=V33, P2=GND)

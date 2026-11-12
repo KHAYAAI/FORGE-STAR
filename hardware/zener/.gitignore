@@ -1,2 +1,5 @@
 .pcb/
-boards/*/eda/
+*.kicad_prl
+layout.log
+*.dsn
+*.ses
