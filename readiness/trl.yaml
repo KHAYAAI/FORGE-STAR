@@ -17,7 +17,7 @@ subsystems:
      evidence: "Link budget; lab test-bed plan (docs/ntn-testbed-plan.md); no hardware yet",
      next: "12-week OAI + Open5GS bench (needs TIA/DSI grant and ICASA test licence)"}
   - {name: "Payload antenna (S-band)", trl: 2, needed_for_launch: 6,
-     evidence: "Trade study: patch (37° mask) vs isoflux (16–21°) vs array. Independent review found the patch gain and beamwidth inconsistent, so the masks are optimistic",
+     evidence: "Trade study with gain tied to beam shape (corrected Nov 2026): patch 47° mask, isoflux with 8 W 16°, array 20°; capacity model per pass",
      next: "openEMS model of isoflux antenna, then prototype + range measurement"}
   - {name: "Payload interface board (hardware/pib)", trl: 3, needed_for_launch: 6,
      evidence: "Schematic as code (Zener and SKiDL), placed, autorouted in CI with every connection made, design check 0 errors; 4 layers, 58 x 40 mm; fab files and 3D model. Not reviewed or built",
@@ -38,5 +38,5 @@ subsystems:
      evidence: "Full stack runs end to end; live ThingsBoard; API with rate limits, audit log, metrics, key revocation; production overlay with TLS, backups, no exposed data ports",
      next: "Deploy on SA hosting, restore drill, monitoring/alerting, POPIA review"}
   - {name: "Constellation design (orbits, coverage, delivery time)", trl: 4, needed_for_launch: 5,
-     evidence: "J2 propagator checked vs SGP4; coverage, latency and equatorial studies; global coverage maps. Results assume a 16° mask that depends on the isoflux antenna and ~38 W, still unproven",
+     evidence: "J2 propagator checked vs SGP4; coverage, latency and equatorial studies; global coverage maps. Service results assume the 16° mask of the isoflux antenna with ~8 W RF (~38 W from the bus), still to be confirmed by a bus supplier",
      next: "Orekit cross-check with drag; ITU filing parameters from the chosen design"}

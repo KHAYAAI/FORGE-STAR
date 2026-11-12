@@ -64,8 +64,9 @@ It's inspired by Exosat (Singapore), but it's Africa-first and starts with IoT, 
 - Stress tests: no sovereign contract → year-6 revenue ~$19.5M (biggest commercial risk); IoT at $1 → ~$31.6M. Seed must close by month 12 → raise on signed LOIs (tracker option `seed_on_lois`, earliest ~month 11).
 - Launch readiness: `python3 scripts/launch_readiness.py` → `docs/LAUNCH_READINESS.md` (TRL in `readiness/trl.yaml`). First payload in orbit: ~Apr 2029 fast track (after the payload freeze H7); own satellite ~Jun 2029; critical path runs through ICASA (counsel → pre-application → test licence → lab).
 - IoT pricing: entrants at ~$1/device/month; at that price year-6 revenue ~$31.6M (vs $37.5M). The sovereign contract is the real dependency.
-- Antenna: demo = patch + deeper NB-IoT repetition (mask ~26°); Stage 2 = shaped isoflux beam (mask 16–21°, needs ~25–40 W during passes).
-- Link budget: NB-IoT uplink closes from ~22° (the coverage mask). The downlink only closes from ~37° with a 14 dBi patch: the payload antenna is the RF design driver.
+- Antenna (corrected Nov 2026): demo = patch + deep coverage mode (mask ~34°); Stage 2–3 = isoflux beam with ~8 W RF (mask 16°, needs ~38 W from the bus during passes, so a 12U). Fallbacks: 5 W + deep coverage mode, 450 km orbit, compact own protocol.
+- Link budget: antenna gain is tied to beam shape (`linkbudget.cos_beam_gain_dbi`): a ±30° patch has ~9.7 dBi. Uplink closes from ~29°, downlink from ~47°. The downlink sets the mask; sims use the higher of the two.
+- Capacity (`sim/capacity_study.py`): ~6 messages/s per NB-IoT carrier per satellite. Stage 3 carries ~1.4 messages per device per day at 330k devices. Capacity, not coverage, is the limit at scale.
 
 ## Open-source stack
 - **Flight:** F´ (primary), cFS (alternative), libcsp, Zephyr/FreeRTOS

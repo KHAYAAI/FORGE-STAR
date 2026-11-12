@@ -22,7 +22,7 @@ from forgestar.orbits import Constellation, Site, look, propagate_ecef  # noqa: 
 
 DAYS, STEP = 2.0, 30.0
 import os
-UPLINK_MASK = float(os.environ.get("UPLINK_MASK_DEG", LINKS["nbiot_uplink"].min_elevation(3.0)))
+UPLINK_MASK = float(os.environ.get("UPLINK_MASK_DEG", max(LINKS["nbiot_uplink"].min_elevation(3.0), LINKS["nbiot_downlink"].min_elevation(3.0))))
 GW_MASK = 10.0
 SLA_MIN = 60.0
 

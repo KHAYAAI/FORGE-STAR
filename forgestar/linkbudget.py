@@ -34,6 +34,40 @@ def pattern_loss_db(off_deg: float, half_beam_deg: float) -> float:
     return -10 * q * math.log10(c)
 
 
+def cos_beam_gain_dbi(half_beam_deg: float, efficiency: float = 0.8) -> float:
+    """Peak gain of a nadir beam with a cos^q pattern and the given half-power half-angle.
+
+    Directivity of a cos^q(theta) power pattern over one hemisphere is 2(q+1). A wide beam cannot have
+    high gain: +/-30 deg gives about 9.7 dBi at 80% efficiency, +/-20 deg about 12.9 dBi.
+    """
+    q = math.log(0.5) / math.log(math.cos(math.radians(half_beam_deg)))
+    return 10 * math.log10(2 * (q + 1) * efficiency)
+
+
+def half_beam_for_gain_deg(gain_dbi: float, efficiency: float = 0.8) -> float:
+    """Half-power half-angle of the cos^q beam that has this peak gain (inverse of cos_beam_gain_dbi)."""
+    q = 10 ** (gain_dbi / 10) / (2 * efficiency) - 1
+    return math.degrees(math.acos(0.5 ** (1 / q)))
+
+
+def isoflux_edge_gain_dbi(edge_el_deg: float, alt_km: float = 550.0, efficiency: float = 0.6) -> float:
+    """Highest gain an isoflux antenna can have at its edge of coverage.
+
+    The pattern rises with off-nadir angle as (range / edge range)^2 so that every user in the cone sees
+    the same signal. Its total radiated power is fixed, which bounds the edge gain:
+    G_edge = 4*pi*efficiency / integral of the pattern over the cone.
+    """
+    edge_off = math.radians(off_nadir_deg(edge_el_deg, alt_km))
+    r_edge = slant_range_km(edge_el_deg, alt_km)
+    n, total = 2000, 0.0
+    for i in range(n):
+        th = (i + 0.5) / n * edge_off
+        # elevation seen by a user at this off-nadir angle
+        el = math.degrees(math.acos(min(1.0, (RE + alt_km) / RE * math.sin(th))))
+        total += (slant_range_km(el, alt_km) / r_edge) ** 2 * math.sin(th) * edge_off / n
+    return 10 * math.log10(4 * math.pi * efficiency / (2 * math.pi * total))
+
+
 def fspl_db(range_km: float, f_mhz: float) -> float:
     return 20 * math.log10(range_km) + 20 * math.log10(f_mhz) + 32.45
 
@@ -71,6 +105,22 @@ class Link:
                 return 30.0
             return -10 * 1.3 * math.log10(max(math.cos(math.radians(off)), 1e-3))  # cos^1.3 scan loss
         return pattern_loss_db(off, self.sat_half_beam_deg)
+
+    @property
+    def sat_gain_dbi(self) -> float:
+        return self.rx_gain_dbi if self.sat_side == "rx" else self.tx_gain_dbi
+
+    def gain_limit_dbi(self, alt_km: float = 550.0) -> float | None:
+        """Most gain the satellite antenna can have for its beam shape (None for a steered array)."""
+        if self.sat_pattern == "cos":
+            return cos_beam_gain_dbi(self.sat_half_beam_deg)
+        if self.sat_pattern == "isoflux":
+            return isoflux_edge_gain_dbi(self.edge_el_deg, alt_km)
+        return None
+
+    def gain_is_consistent(self, alt_km: float = 550.0, tol_db: float = 0.5) -> bool:
+        lim = self.gain_limit_dbi(alt_km)
+        return lim is None or self.sat_gain_dbi <= lim + tol_db
 
     def snr_db(self, el_deg: float, alt_km: float = 550.0) -> float:
         loss = self.sat_gain_loss_db(el_deg, alt_km)

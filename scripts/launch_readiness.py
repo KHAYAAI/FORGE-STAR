@@ -108,7 +108,8 @@ def main():
           "| Stage 3 constellation | 42 sats @45° + 6 @10° = 48 | `sim/equatorial_study.py` |",
           "| Gateways | Hartebeesthoek, Cape Town, Walvis Bay, Mauritius, Malindi, Lagos | `sim/equatorial_study.py` |",
           "| Delivery SLA | 95% ≤ 26 min at all 7 customer sites (design); 95% ≤ 40 min measured live on 24 sats, SA gateways, with acks | `sim/results/equatorial.md`, live stack |",
-          "| Antenna | patch + deep repetition for the demo; isoflux (16° mask) for service | `sim/antenna_trade.py` |",
+          "| Antenna | patch + deep coverage mode for the demo (34° mask); isoflux with ~8 W for service (16° mask, ~38 W from the bus) | `sim/antenna_trade.py` |",
+          "| Capacity | ~6 messages/s per carrier per satellite; Stage 3 carries ~1.4 messages per device per day at 330k devices | `sim/capacity_study.py` |",
           f"| Year-6 revenue (base / IoT at $1 / no sovereign deal) | ${base[-1]['revenue']/1e6:.1f}M / ${price[-1]['revenue']/1e6:.1f}M / ${nosov[-1]['revenue']/1e6:.1f}M | `model/` |",
           f"| Equity to Stage 3 | ${sum(r['equity_in'] for r in base)/1e6:.1f}M | `model/` |",
           "| Seed timing | close by month 12: raise on signed LOIs (earliest ~month 11) | `readiness/` |"]

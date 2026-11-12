@@ -186,7 +186,6 @@ Gateways: Hartebeesthoek, Cape Town (owned), Walvis Bay, Mauritius, Malindi, Lag
 
 | Configuration | Johannesburg | Maputo corridor | Lusaka | Dar es Salaam | Nairobi | Lagos |
 |---|---|---|---|---|---|---|
-| **24 sats, SA gateways, 22° mask** | 1.6 h | 81 min | 1.8 h | 3.4 h | 5.8 h | 4.3 h |
 | **36 sats, 4 gateways, 16° mask** | 44 min | 71 min | 12 min | 44 min | 1.8 h | 1.9 h |
 | **Stage 3 design (42+6, 6 gateways)** | 8 min | 8 min | 26 min | 11 min | 9 min | 11 min |
 
@@ -196,22 +195,28 @@ Live platform run on the Stage 3 design: **95% of satellite messages within 9 mi
 
 | Link | Closes (3 dB margin) from | Note |
 |---|---|---|
-| **NB-IoT uplink** (23 dBm device → 14 dBi patch) | ~22° | Sets the baseline mask |
-| **NB-IoT downlink** (2 W, ±30° patch) | ~37° | The payload design driver |
+| **NB-IoT uplink** (23 dBm device → 9.7 dBi patch, ±30° beam) | ~29° | Not the limit |
+| **NB-IoT downlink** (2 W, same patch) | ~47° | Sets the mask: the payload design driver |
 | **AIS receive** (VHF monopole) | horizon | Collision-limited, not budget-limited |
-| **Feeder downlink** (X-band → 3.7 m dish) | ~4° | Comfortable |
+| **Feeder downlink** (X-band → 3.7 m dish) | ~10° | Closes at the gateway mask |
 
 #### Antenna trade
 
-| Option | Usable mask | DC power | Est. cost |
-|---|---|---|---|
-| **Patch 14 dBi, 2 W (baseline)** | 37° | 12 W | ~$15k |
-| **Patch + deeper NB-IoT repetition** | 26° | 12 W | ~$15k |
-| **Isoflux 7 dBi, 5 W** | 21° | 25 W | ~$45k |
-| **Isoflux 5 dBi, 8 W** | 16° | 38 W | ~$55k |
-| **4×4 phased array** | 20° | 30 W | ~$150k |
+| Option | Usable mask | Stage 3 typical / longest wait (SA) | DC power | Est. cost |
+|---|---|---|---|---|
+| **Patch ±30°, 2 W (baseline)** | 47° | 28 min / 1.9 h | 12 W | ~$15k |
+| **Patch + deep coverage mode** | 34° | 16 min / 72 min | 12 W | ~$15k |
+| **Isoflux to 30°, 5 W** | 23° | 11 min / 38 min | 25 W | ~$45k |
+| **Isoflux to 20°, 8 W** | 16° | 7 min / 12 min | 38 W | ~$55k |
+| **Isoflux, 5 W, at 450 km** | 17° | 10 min / 22 min | 25 W | ~$45k |
+| **Isoflux, 2 W, compact own protocol** | 10° | 4 min / 8 min | 12 W | ~$35k |
+| **4×4 phased array** | 20° | 10 min / 22 min | 30 W | ~$150k |
 
-Demonstrator: patch + deeper repetition. Stage 2 onward: shaped isoflux antenna, provided the bus supplies ~25–40 W during passes.
+Antenna gain is tied to beam shape: a ±30° patch has about 9.7 dBi, not the 14 dBi first assumed (corrected in v1.2 after an independent review). Demonstrator: patch + deep coverage mode. Stage 2 onward: isoflux antenna with about 8 W, which needs about 38 W from the bus during passes (a 12U). The Stage 3 results in this brief assume that antenna.
+
+#### Capacity per pass
+
+One NB-IoT carrier takes about 6 messages a second per satellite. With most devices in southern Africa, Stage 3 carries about **11 messages per device per day at 40,000 devices, 4 at 110,000 and 1.4 at 330,000**. Hourly reporting for every device does not fit at scale. The levers are a compact store-and-forward protocol (about 3 times the messages), more carriers, more satellites and tiered message plans (`sim/capacity_study.py`).
 
 #### Link layer
 
@@ -399,7 +404,8 @@ heypcb.ai designs the circuit boards (schematics, routing, Gerbers, BOMs, KiCad 
 | **Ownership rules change** | Equity equivalents could let Starlink in | Sell sovereignty and IoT, not broadband |
 | **Sovereign contract** | Without it, year-6 revenue falls to ~$19.5M | Start the government conversation early; prepayment terms |
 | **IoT price pressure** | Entrants at ~$1/device | Compete on sovereignty, local service, SLA |
-| **Payload RF** | Downlink closes only from ~37° on a simple patch | Isoflux antenna; deeper repetition for the demo; RF hire |
+| **Payload RF** | Downlink closes only from ~47° on a simple patch; the 16° service mask needs an isoflux antenna and ~38 W from the bus | Isoflux antenna on a 12U; deep coverage mode, 450 km orbit or compact protocol as fallbacks; RF hire |
+| **Capacity at scale** | Stage 3 carries ~1.4 messages per device per day at 330,000 devices | Tiered message plans; compact protocol; more carriers and satellites in Stage 4 |
 | **NB-IoT NTN software maturity** | Open-source base station is the biggest unknown | Lab test-bed first; vendor fallback |
 | **Capital timing** | Seed needed by month 12 | Raise on signed LOIs; grants as bridge |
 | **Launch slippage** | Rideshare dates move | Hosted payload first; schedule buffers |

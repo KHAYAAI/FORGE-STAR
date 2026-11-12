@@ -47,7 +47,6 @@ Nothing.
 | C1 | Ecosystem LOIs: FORGE Freight + maritime USV venture | 2026-12-01 → 2027-02-01 | TBD | todo |
 | C2 | IoT reseller agreement with an existing satellite IoT network | 2026-12-01 → 2027-04-01 | TBD | todo |
 | F1 | TIA/DSI grant application: NB-IoT NTN lab | 2027-01-01 → 2027-05-01 | TBD | todo |
-| L4 | Fix the antenna and link budget: gain to match beamwidth, coverage on the downlink mask, per-pass capacity | 2026-12-01 → 2027-02-01 | TBD | todo |
 | R1 | Bus partner quotes and MoU (Dragonfly Aerospace / CubeSpace) | 2027-01-01 → 2027-05-01 | TBD | todo |
 | H2 | Hosted-payload RFQ to a host platform (Loft Orbital or D-Orbit) alongside the bus RFQ | 2027-01-01 → 2027-04-01 | TBD | todo |
 | H3 | RF vendor quotes: S-band SDR + PA, X-band transmitter, S-band patch (EnduroSat, Alén, IQ Spacecom) | 2027-01-01 → 2027-03-01 | TBD | todo |
@@ -120,7 +119,7 @@ gantt
   section Proof in the lab
   Buy lab kit :L1, 2027-05-01, 30d
   12-week NB-IoT NTN test-bed, cabled :L2, 2027-06-01, 91d
-  Fix the antenna and link budget - gain to match  :L4, 2026-12-01, 60d
+  Antenna and link budget - confirm ~38 W payload  :active, L4, 2026-12-01, 182d
   Antenna decision - patch + deep coverage for dem :L3, 2027-09-01, 60d
   section Proof in orbit
   Bus partner quotes and MoU :R1, 2027-01-01, 121d

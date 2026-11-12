@@ -191,50 +191,69 @@ LEO satellites cannot be parked over South Africa: they circle Earth roughly eve
 
 `sim/coverage_sim.py` simulates Walker constellations at 550 km over 13 sites from Cape Town to Tunis, including the SA EEZ and Marion Island. It includes Earth's rotation and J2 drift, and runs over three days. The elevation mask comes from the link budget (below). The worst site in each region is shown.
 
-| Constellation | SA typical wait | SA longest wait | Africa longest wait | Gateway passes/day |
+| Constellation | Simple patch (47° mask): SA typical / longest wait | Isoflux antenna (16° mask): SA typical / longest wait | Isoflux: Africa longest wait | Gateway passes/day |
 |---|---|---|---|---|
-| **1 sat, SSO rideshare** | ~10 h | 13 h | 72 h | 3 |
-| **6 sats, 45°** | ~75 min | 6.9 h | 11 h | 27 |
-| **12 sats, 45°** | ~40 min | 5.9 h | 5.9 h | 56 |
-| **24 sats, 45°** | ~17 min | 2.8 h | 4.2 h | 113 |
-| **48 sats, 45°** | ~8 min | 1.7 h | 2.3 h | 221 |
-| **80 sats, 50°** | ~5 min | 44 min | 83 min | 320 |
-| **120–150 sats, 50°** | 2–3 min | 3–6 min | 44 min | 480–600 |
+| **1 sat, SSO rideshare** | 36 h / 58 h | ~10 h / 13 h | 14 h | 3 |
+| **6 sats, 45°** | 3.1 h / 9.7 h | ~61 min / 5.8 h | 10 h | 27 |
+| **12 sats, 45°** | 1.6 h / 7.2 h | ~29 min / 5.0 h | 5.4 h | 56 |
+| **24 sats, 45°** | 48 min / 4.8 h | ~12 min / 1.6 h | 3.9 h | 113 |
+| **48 sats, 45°** | 23 min / 3.1 h | ~6 min / 66 min | 1.9 h | 221 |
+| **80 sats, 50°** | 16 min / 2.1 h | ~4 min / 12 min | 62 min | 320 |
+| **120–150 sats, 50°** | 10–14 min / ~80 min | 0–2 min / 0–3 min | 18–19 min | 480–600 |
 
-Mask: 22°, where the NB-IoT uplink closes with a 3 dB margin. A 10° mask (`MIN_ELEV_DEG=10`) roughly halves the longest waits.
+The mask is where a device can both hear the satellite and reach it. With a simple patch antenna that is about 47° (the downlink sets it). With the shaped isoflux antenna and about 8 W of RF power it is about 16°. **The antenna decides the service**: 48 satellites with a patch are worse than 24 with the isoflux antenna.
 
 What changes:
-- **On average, the original numbers hold up.** 16–24 satellites give SA a typical wait of about 15–20 minutes.
-- **The longest wait is worse than assumed.** Promising "every 20–40 minutes, guaranteed" needs **~48–80 satellites for SA** and **~80–120 for Africa**.
+- **With the isoflux antenna, the original numbers hold up.** 24 satellites give SA a typical wait of about 12 minutes.
+- **The longest wait is worse than assumed.** Promising "every 20–40 minutes, guaranteed" needs **~48–80 satellites for SA** and **~80–120 for Africa**, with the isoflux antenna.
 - **Sell typical latency, not worst case**, until Stage 3. Customer SLAs should be written as "95% of messages within X". The platform's `latency_sla` view measures exactly this.
 - **A 45° inclination beats sun-synchronous (SSO)** for Africa. A first rideshare will probably go to SSO, which is fine for a demo but not for service. Mixing the two in one constellation leaves long gaps.
-- **For continuous narrowband, 80–150 is right.** It needs the top of the range at a 22° mask.
+- **For continuous narrowband, 80–150 is right**, and only with the isoflux antenna or better.
 
 #### Link budget check
 
-`forgestar/linkbudget.py` uses illustrative 6U–12U parameters. Replace them with datasheet values.
+`forgestar/linkbudget.py` uses illustrative 6U–12U parameters. Replace them with datasheet values. Antenna gain is now tied to beam shape: a ±30° beam has about 9.7 dBi, not the 14 dBi first assumed (corrected November 2026 after an independent review).
 
 | Link | Closes (3 dB margin) from | Implication |
 |---|---|---|
-| **NB-IoT uplink** (23 dBm device → 14 dBi sat patch) | ~22° elevation | Sets the coverage mask above |
-| **NB-IoT downlink** (2 W into 14 dBi, ±30° beam) | ~37° elevation | **The payload design driver.** Devices need the downlink to attach. Fix it with a shaped (isoflux) or steerable antenna, more RF power, or a narrower downlink carrier. Budget RF engineering for this |
+| **NB-IoT uplink** (23 dBm device → 9.7 dBi sat patch, ±30° beam) | ~29° elevation | Not the limit |
+| **NB-IoT downlink** (2 W into the same patch) | ~47° elevation | **Sets the mask, and is the payload design driver.** Devices must hear the downlink before they can send. Fix it with a shaped (isoflux) or steerable antenna, more RF power, deeper repetition, or a narrower downlink carrier. Budget RF engineering for this |
 | **AIS receive** (VHF monopole) | horizon | AIS is limited by message collisions, not link budget |
-| **Feeder downlink** (X-band → 3.7 m SA dish) | ~4° | Gateway passes are long and the link closes easily |
+| **Feeder downlink** (X-band → 3.7 m SA dish) | ~10° | Closes at the 10° gateway mask with 3 dB margin |
 
 #### Antenna trade study
 
-`sim/antenna_trade.py` compares payload antennas. The usable mask is the higher of uplink and downlink. Service is shown for 24 satellites at 45°, at the worst SA site.
+`sim/antenna_trade.py` compares payload antennas. The usable mask is the higher of uplink and downlink. Service is shown for the worst SA site.
 
-| Option | Usable mask | SA typical / longest wait | DC power | Est. cost |
-|---|---|---|---|---|
-| **Patch 14 dBi, 2 W (baseline)** | 37° | 32 min / 4.2 h | 12 W | ~$15k |
-| **Baseline + deeper coverage enhancement** | 26° | 21 min / 3.5 h | 12 W | ~$15k |
-| **Patch, 10 W amplifier** | 24° | 20 min / 3.3 h | 45 W | ~$40k |
-| **Shaped (isoflux) beam, 7 dBi, 5 W** | 21° | 16 min / 2.5 h | 25 W | ~$45k |
-| **Shaped (isoflux) beam, 5 dBi, 8 W** | 16° | 11 min / 1.6 h | 38 W | ~$55k |
-| **4×4 phased array, 4 W** | 20° | 16 min / 2.2 h | 30 W | ~$150k |
+| Option | Usable mask | 24 sats: typical / longest wait | Stage 3 (48): typical / longest wait | DC power | Est. cost |
+|---|---|---|---|---|---|
+| **Patch ±30°, 2 W (baseline)** | 47° | 48 min / 4.8 h | 28 min / 1.9 h | 12 W | ~$15k |
+| **Patch + deep coverage mode** (software) | 34° | 30 min / 4.2 h | 16 min / 72 min | 12 W | ~$15k |
+| **Patch, 10 W amplifier** | 32° | 26 min / 3.9 h | 15 min / 56 min | 45 W | ~$40k |
+| **Isoflux to 30°, 6 dBi, 5 W** | 23° | 19 min / 3.1 h | 11 min / 38 min | 25 W | ~$45k |
+| **Isoflux to 20°, 5 dBi, 8 W** | 16° | 11 min / 1.6 h | 7 min / 12 min | 38 W | ~$55k |
+| **Isoflux, 5 W, at 450 km** | 17° | 17 min / 2.5 h | 10 min / 22 min | 25 W | ~$45k |
+| **Isoflux, 5 W + deep coverage mode** | 7° | 7 min / 32 min | 3 min / 5 min | 25 W | ~$45k |
+| **Isoflux, 2 W, compact own protocol** | 10° | 8 min / 50 min | 4 min / 8 min | 12 W | ~$35k |
+| **4×4 phased array, 4 W** | 20° | 16 min / 2.2 h | 10 min / 22 min | 30 W | ~$150k |
 
-**Recommendation:** fly the demonstrator with the simple patch plus deeper NB-IoT repetition, which is a software change. Design the Stage 2 payload around a shaped isoflux antenna, provided the bus can supply about 25–40 W during passes. That's a question for the bus partner. Keep the phased array for Stage 4.
+**Recommendation:** fly the demonstrator with the simple patch plus deep coverage mode, which is a software change. Its coverage is poor by design. Build the Stage 2–3 payload around the isoflux antenna with about 8 W, which needs about 38 W from the bus during passes: a 12U, and a question for the bus partner. If the bus cannot supply it, the fallbacks are 5 W with deep coverage mode, a 450 km orbit, or the compact protocol. Keep the phased array for Stage 4.
+
+#### Capacity per pass
+
+`sim/capacity_study.py` asks how many messages one satellite can carry. One NB-IoT carrier takes about 6 messages a second. Most early devices sit in southern Africa, inside one footprint, so the satellites over that region set the limit.
+
+| Fleet and payload | Messages per device per day at 40k / 110k / 330k devices |
+|---|---|
+| **Stage 3, NB-IoT, 1 carrier** | 11 / 4 / 1.4 |
+| **Stage 3, deep coverage mode** | 2.8 / 1.0 / 0.3 |
+| **Stage 3, compact own protocol** | 32 / 12 / 3.9 |
+| **Stage 4 (150 sats), NB-IoT, 1 carrier** | 32 / 12 / 3.9 |
+| **Stage 4, phased array with 4 carriers** | 130 / 47 / 16 |
+
+- **At scale, capacity is a tighter limit than coverage.** Stage 3 carries about 1.4 messages per device per day at 330,000 devices. Hourly reporting for every device does not fit.
+- **Sell message plans by tier.** A few readings a day fits Stage 3. Hourly plans need Stage 4, more carriers or the compact protocol.
+- **Deep coverage mode trades capacity for reach.** Use it for hard-to-reach devices only.
 
 *Simplified model: circular orbits with J2. Checked against SGP4 (`sim/sgp4_crosscheck.py`): orbit planes agree to within 3 km over 3 days, and the remaining difference is a timing offset equal to 1–3 km of altitude. Firm up with Orekit, then OpenSN, before external use. All antenna figures are illustrative.*
 
@@ -244,7 +263,6 @@ What changes:
 
 | Setup (95% of messages delivered within…) | Johannesburg | Maputo corridor | Lusaka | Dar es Salaam | Nairobi | Lagos |
 |---|---|---|---|---|---|---|
-| **24 sats, 22° mask, SA gateways only** | 1.6 h | 81 min | 1.8 h | 3.4 h | 5.8 h | 4.3 h |
 | **24 sats, 16° mask, 4 gateways** | 77 min | 57 min | 74 min | 2.7 h | 3.7 h | 3.8 h |
 | **36 sats, 16° mask, 4 gateways** | 44 min | 71 min | 12 min | 44 min | 1.8 h | 1.9 h |
 | **48 sats, 16° mask, 4 gateways** | 42 min | 53 min | 9 min | 50 min | 1.9 h | 1.8 h |

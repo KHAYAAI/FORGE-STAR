@@ -26,7 +26,7 @@ Both PDFs are built from markdown in `docs/`:
 ```bash
 python3 scripts/build_pdf.py                                        # strategy
 python3 scripts/build_pdf.py --src docs/brief.md --out output/FORGE_STAR_Brief.pdf \
-  --subtitle "Technical and investor brief" --label "Brief v1.1  ·  November 2026  ·  Confidential"
+  --subtitle "Technical and investor brief" --label "Brief v1.2  ·  November 2026  ·  Confidential"
 ```
 
 ---

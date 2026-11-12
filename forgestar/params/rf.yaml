@@ -8,7 +8,7 @@ nbiot_uplink:
   f_mhz:            {value: 2000.0, source: "3GPP Rel-17 n256 uplink band (1980–2010 MHz)", status: illustrative}
   tx_power_dbw:     {value: -7.0,   source: "23 dBm UE power class 3", status: illustrative}
   tx_gain_dbi:      {value: 0.0,    source: "typical IoT device antenna", status: illustrative}
-  rx_gain_dbi:      {value: 14.0,   source: "assumed 2×2 S-band patch", status: illustrative}
+  rx_gain_dbi:      {value: 9.7,    source: "S-band patch with a ±30° beam: gain follows from beamwidth at 80% efficiency (linkbudget.cos_beam_gain_dbi)", status: illustrative}
   rx_noise_temp_k:  {value: 500.0,  source: "assumed LNA + Earth-view antenna", status: illustrative}
   bandwidth_hz:     {value: 3750.0, source: "NB-IoT single-tone 3.75 kHz", status: illustrative}
   required_snr_db:  {value: -8.0,   source: "NPUSCH with deep repetition, incl. implementation loss", status: illustrative}
@@ -20,7 +20,7 @@ nbiot_downlink:
   name: "NB-IoT NTN downlink (sat→device), S-band"
   f_mhz:            {value: 2185.0, source: "3GPP n256 downlink band (2170–2200 MHz)", status: illustrative}
   tx_power_dbw:     {value: 3.0,    source: "assumed 2 W SSPA", status: illustrative}
-  tx_gain_dbi:      {value: 14.0,   source: "assumed 2×2 S-band patch", status: illustrative}
+  tx_gain_dbi:      {value: 9.7,    source: "same S-band patch as the uplink, ±30° beam", status: illustrative}
   rx_gain_dbi:      {value: 0.0,    source: "typical IoT device antenna", status: illustrative}
   rx_noise_temp_k:  {value: 400.0,  source: "device NF ~5 dB", status: illustrative}
   bandwidth_hz:     {value: 180000.0, source: "NB-IoT carrier", status: illustrative}
@@ -53,4 +53,4 @@ feeder_downlink:
   required_snr_db:  {value: 5.0,    source: "QPSK + RS(255,223) (forgestar/fec.py)", status: illustrative}
   other_losses_db:  {value: 2.0,    source: "atmosphere + pointing", status: illustrative}
   sat_side: tx
-  sat_half_beam_deg: {value: 60.0,  source: "patch", status: illustrative}
+  sat_half_beam_deg: {value: 50.0,  source: "wide patch; 6 dBi is consistent with a ±50° beam", status: illustrative}
