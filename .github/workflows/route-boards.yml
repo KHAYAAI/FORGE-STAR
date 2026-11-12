@@ -14,6 +14,8 @@ on:
 jobs:
   route:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -39,6 +41,7 @@ jobs:
           B=${{ matrix.board }}; PCB=boards/$B/eda/$B.kicad_pcb; OUT=out/$B; mkdir -p $OUT/gerbers
           kicad-cli pcb drc --severity-error -o $OUT/drc.rpt $PCB || true
           grep -E "^\[" $OUT/drc.rpt | sort | uniq -c | tee $OUT/drc-summary.txt || true
+          grep -A3 "unconnected_items" $OUT/drc.rpt | grep -oE "\[[^]]+\] of [A-Z]+[0-9]+" | sort | uniq -c | sort -rn > $OUT/unconnected-by-net.txt || true
           kicad-cli pcb export gerbers -o $OUT/gerbers/ $PCB || true
           kicad-cli pcb export drill -o $OUT/gerbers/ $PCB || true
           kicad-cli pcb export pos --format csv --units mm -o $OUT/$B-pos.csv $PCB || true
@@ -50,3 +53,16 @@ jobs:
         with:
           name: routed-${{ matrix.board }}
           path: hardware/zener/out/${{ matrix.board }}/
+      - name: Publish results to the routed-boards branch
+        if: always()
+        working-directory: hardware/zener/out
+        run: |
+          B=${{ matrix.board }}
+          git init -q pub && cd pub
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}"
+          git fetch -q --depth 1 origin routed-boards-$B 2>/dev/null && git checkout -q -B routed-boards-$B FETCH_HEAD || git checkout -q --orphan routed-boards-$B
+          rm -rf "$B" && cp -r ../$B "$B"
+          git add -A && git commit -qm "Routed $B from ${{ github.sha }}" || true
+          git push -q origin routed-boards-$B
