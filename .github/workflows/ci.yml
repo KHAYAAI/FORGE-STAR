@@ -73,6 +73,21 @@ jobs:
           name: pib-fab
           path: hardware/build/pib/
 
+  zener:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pcb (Zener)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/diodeinc/pcb/main/install.sh | bash
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - name: Build boards (checks only; nothing is sent to Diode)
+        working-directory: hardware/zener
+        run: |
+          pcb build boards/pib/pib.zen
+          pcb build boards/iot_node/iot_node.zen
+          pcb bom --offline boards/iot_node/iot_node.zen
+
   flight:
     runs-on: ubuntu-latest
     steps:

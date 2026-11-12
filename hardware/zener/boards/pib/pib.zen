@@ -1,0 +1,190 @@
+"""
+FORGE STAR payload interface board (PIB), rev A, in Zener.
+
+Port of hardware/boards/pib/pib.py (SKiDL). Same circuit:
+- STM32L432KC runs flight/libforge (store-and-forward, frames, FEC encode)
+- CAN to the satellite bus (SN65HVD230, 3.3 V)
+- high-side switch for the payload radio (AO3401A P-FET driven by a 2N7002)
+- radio current/voltage telemetry (INA219, 50 mOhm shunt), board temperature (TMP117)
+- UART to the radio/SDR module, SWD for programming
+
+Connectors
+  BUS:   1 VIN (5 V)  2 GND  3 CANH  4 CANL  5 GND
+  RADIO: 1 RADIO_PWR  2 GND  3 UART_TX  4 UART_RX  5 GND
+  SWD:   1 +3V3  2 SWDIO  3 SWCLK  4 NRST  5 GND
+
+First design, illustrative values. Needs review by an electrical engineer before fabrication.
+"""
+
+Resistor = Module("@stdlib/generics/Resistor.zen")
+Capacitor = Module("@stdlib/generics/Capacitor.zen")
+PinHeader = Module("@stdlib/generics/PinHeader.zen")
+
+VIN = Power("VIN", voltage="5V")
+V33 = Power("+3V3", voltage="3.3V")
+VIN_SENSE = Power("VIN_SENSE", voltage="5V")
+RADIO_PWR = Power("RADIO_PWR", voltage="5V")
+GND = Ground("GND")
+
+CANH = Net("CANH")
+CANL = Net("CANL")
+CAN_TX = Net("CAN_TX")
+CAN_RX = Net("CAN_RX")
+I2C_SCL = Net("I2C_SCL")
+I2C_SDA = Net("I2C_SDA")
+UART_TX = Net("UART_TX")
+UART_RX = Net("UART_RX")
+RADIO_EN = Net("RADIO_EN")
+SWDIO = Net("SWDIO")
+SWCLK = Net("SWCLK")
+NRST = Net("NRST")
+BOOT0 = Net("BOOT0")
+SW_GATE = Net("SW_GATE")
+DRV_GATE = Net("DRV_GATE")
+
+# 3.3 V regulator
+Component(
+    name="REG_3V3",
+    symbol=Symbol(library="parts/AP2112K-3.3.kicad_sym"),
+    part=Part(mpn="AP2112K-3.3TRG1", manufacturer="Diodes Incorporated"),
+    pins={"VIN": VIN, "EN": VIN, "GND": GND, "VOUT": V33},
+)
+Capacitor(name="C_REG_IN", value="1uF", package="0603", P1=VIN, P2=GND)
+Capacitor(name="C_REG_OUT", value="1uF", package="0603", P1=V33, P2=GND)
+
+# MCU
+Component(
+    name="MCU",
+    symbol=Symbol(library="parts/STM32L432KCUx.kicad_sym"),
+    part=Part(mpn="STM32L432KCU6", manufacturer="STMicroelectronics"),
+    pins={
+        "VDD": V33,
+        "VDDA": V33,
+        "VSS": GND,
+        "NRST": NRST,
+        "PH3": BOOT0,
+        "PA0": RADIO_EN,
+        "PA2": UART_TX,
+        "PA3": UART_RX,
+        "PA11": CAN_RX,
+        "PA12": CAN_TX,
+        "PA13": SWDIO,
+        "PA14": SWCLK,
+        "PB6": I2C_SCL,
+        "PB7": I2C_SDA,
+        "PA1": NotConnected(),
+        "PA4": NotConnected(),
+        "PA5": NotConnected(),
+        "PA6": NotConnected(),
+        "PA7": NotConnected(),
+        "PA8": NotConnected(),
+        "PA9": NotConnected(),
+        "PA10": NotConnected(),
+        "PA15": NotConnected(),
+        "PB0": NotConnected(),
+        "PB1": NotConnected(),
+        "PB3": NotConnected(),
+        "PB4": NotConnected(),
+        "PB5": NotConnected(),
+        "PC14": NotConnected(),
+        "PC15": NotConnected(),
+    },
+)
+Capacitor(name="C_MCU_1", value="100nF", package="0603", P1=V33, P2=GND)
+Capacitor(name="C_MCU_2", value="100nF", package="0603", P1=V33, P2=GND)
+Capacitor(name="C_MCU_BULK", value="4.7uF", package="0603", P1=V33, P2=GND)
+Capacitor(name="C_NRST", value="100nF", package="0603", P1=NRST, P2=GND)
+Resistor(name="R_BOOT0", value="10kohm", package="0603", P1=BOOT0, P2=GND)
+Resistor(name="R_SCL", value="4.7kohm", package="0603", P1=I2C_SCL, P2=V33)
+Resistor(name="R_SDA", value="4.7kohm", package="0603", P1=I2C_SDA, P2=V33)
+
+# CAN transceiver. Rs low selects high-speed mode.
+Component(
+    name="CAN",
+    symbol=Symbol(library="parts/SN65HVD230.kicad_sym"),
+    part=Part(mpn="SN65HVD230DR", manufacturer="Texas Instruments"),
+    pins={
+        "VCC": V33,
+        "GND": GND,
+        "Rs": GND,
+        "D": CAN_TX,
+        "R": CAN_RX,
+        "CANH": CANH,
+        "CANL": CANL,
+        "Vref": NotConnected(),
+    },
+)
+Capacitor(name="C_CAN", value="100nF", package="0603", P1=V33, P2=GND)
+# Fit the termination only if the board sits at an end of the bus.
+Resistor(name="R_CAN_TERM", value="120ohm", package="0603", P1=CANH, P2=CANL)
+
+# Radio power: shunt, then a high-side P-FET switch. Off by default while the MCU boots.
+Resistor(name="R_SHUNT", value="50mohm", package="1206", P1=VIN, P2=VIN_SENSE)
+Component(
+    name="Q_SW",
+    symbol=Symbol(library="parts/AO3401A.kicad_sym"),
+    part=Part(mpn="AO3401A", manufacturer="Alpha & Omega Semiconductor"),
+    prefix="Q",
+    pins={"S": VIN_SENSE, "D": RADIO_PWR, "G": SW_GATE},
+)
+Resistor(name="R_SW_PULLUP", value="100kohm", package="0603", P1=SW_GATE, P2=VIN_SENSE)
+Component(
+    name="Q_DRV",
+    symbol=Symbol(library="parts/2N7002.kicad_sym"),
+    part=Part(mpn="2N7002", manufacturer="onsemi"),
+    prefix="Q",
+    pins={"D": SW_GATE, "S": GND, "G": DRV_GATE},
+)
+Resistor(name="R_DRV_SERIES", value="100ohm", package="0603", P1=RADIO_EN, P2=DRV_GATE)
+Resistor(name="R_DRV_PULLDOWN", value="100kohm", package="0603", P1=DRV_GATE, P2=GND)
+Capacitor(name="C_RADIO", value="10uF", package="1206", P1=RADIO_PWR, P2=GND)
+
+# Telemetry: INA219 at I2C 0x40, TMP117 at 0x48
+Component(
+    name="INA",
+    symbol=Symbol(library="parts/INA219AxD.kicad_sym"),
+    part=Part(mpn="INA219AIDR", manufacturer="Texas Instruments"),
+    pins={
+        "VS": V33,
+        "GND": GND,
+        "A0": GND,
+        "A1": GND,
+        "IN+": VIN,
+        "IN-": VIN_SENSE,
+        "SCL": I2C_SCL,
+        "SDA": I2C_SDA,
+    },
+)
+Capacitor(name="C_INA", value="100nF", package="0603", P1=V33, P2=GND)
+Component(
+    name="TMP",
+    symbol=Symbol(library="parts/TMP117xxDRV.kicad_sym"),
+    part=Part(mpn="TMP117AIDRVR", manufacturer="Texas Instruments"),
+    pins={
+        "V+": V33,
+        "GND": GND,
+        "ADD0": GND,
+        "SCL": I2C_SCL,
+        "SDA": I2C_SDA,
+        "ALERT": NotConnected(),
+    },
+)
+Capacitor(name="C_TMP", value="100nF", package="0603", P1=V33, P2=GND)
+
+# Connectors
+PinHeader(name="J_BUS", pins=5, rows=1, mount="THT", pitch="2.54mm", P1=VIN, P2=GND, P3=CANH, P4=CANL, P5=GND)
+PinHeader(
+    name="J_RADIO",
+    pins=5,
+    rows=1,
+    mount="THT",
+    pitch="2.54mm",
+    P1=RADIO_PWR,
+    P2=GND,
+    P3=UART_TX,
+    P4=UART_RX,
+    P5=GND,
+)
+PinHeader(name="J_SWD", pins=5, rows=1, mount="THT", pitch="2.54mm", P1=V33, P2=SWDIO, P3=SWCLK, P4=NRST, P5=GND)
+
+Board(name="pib", layers=4, path="eda")

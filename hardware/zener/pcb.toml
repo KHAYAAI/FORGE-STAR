@@ -1,0 +1,4 @@
+[workspace]
+repository = "github.com/KHAYAAI/FORGE-STAR"
+path = "hardware/zener"
+pcb-version = "0.4"

@@ -1,0 +1,355 @@
+"""
+FORGE STAR IoT test device (iot_node), rev A.
+
+A battery-powered NB-IoT node for the lab test-bed and field trials. It runs the device SDK
+(flight/libforge forge_device: queue, re-send until acked, expiry).
+
+- Quectel BC66 footprint NB-IoT module. BC66 is terrestrial NB-IoT. For satellite (NTN) tests the
+  plan is to fit an NTN module in the same footprint (candidate: Quectel CC660D-LS). Pin
+  compatibility is NOT yet verified against the datasheets.
+- u-blox MAX-M10S GNSS (position and time, which NTN devices need for Doppler correction)
+- STM32L432KC MCU, TMP117 temperature sensor
+- 1-cell LiPo with USB-C charging (MCP73831, 500 mA)
+- All logic runs at 1.8 V to match the module's I/O voltage, so no level shifters
+
+Connectors
+  USB-C: charging only        BAT: JST-PH, 1 = BAT+, 2 = GND (check your battery's polarity)
+  SWD:   1 +1V8  2 SWDIO  3 SWCLK  4 NRST  5 GND
+  DBG:   1 VDD_EXT  2 MOD_TXD  3 MOD_RXD  4 DBG_TXD  5 DBG_RXD  6 GND (module logs, firmware update)
+  ANT_NB, ANT_GNSS: U.FL
+
+First design, illustrative values. Needs review by an electrical engineer before fabrication.
+"""
+
+Resistor = Module("@stdlib/generics/Resistor.zen")
+Capacitor = Module("@stdlib/generics/Capacitor.zen")
+Inductor = Module("@stdlib/generics/Inductor.zen")
+Led = Module("@stdlib/generics/Led.zen")
+PinHeader = Module("@stdlib/generics/PinHeader.zen")
+
+VBUS = Power("VBUS", voltage="5V")
+BAT = Power("BAT", voltage="3.0V to 4.2V")
+V_MOD = Power("V_MOD", voltage="3.3V")
+V18 = Power("+1V8", voltage="1.8V")
+VDD_EXT = Power("VDD_EXT", voltage="1.8V")
+SIM_VDD = Power("SIM_VDD", voltage="1.8V")
+GNSS_VRF = Power("GNSS_VRF", voltage="1.8V")
+GND = Ground("GND")
+
+CC1 = Net("CC1")
+CC2 = Net("CC2")
+CHG_PROG = Net("CHG_PROG")
+CHG_STAT = Net("CHG_STAT")
+CHG_LED = Net("CHG_LED")
+VBAT_SENSE = Net("VBAT_SENSE")
+
+MOD_TXD = Net("MOD_TXD")
+MOD_RXD = Net("MOD_RXD")
+DBG_TXD = Net("DBG_TXD")
+DBG_RXD = Net("DBG_RXD")
+MOD_RI = Net("MOD_RI")
+PWRKEY = Net("PWRKEY")
+PWRKEY_CTL = Net("PWRKEY_CTL")
+PWRKEY_B = Net("PWRKEY_B")
+MOD_RESET = Net("MOD_RESET")
+RESET_CTL = Net("RESET_CTL")
+RESET_B = Net("RESET_B")
+PSM_EINT = Net("PSM_EINT")
+PSM_CTL = Net("PSM_CTL")
+PSM_B = Net("PSM_B")
+SIM_DATA = Net("SIM_DATA")
+SIM_RST = Net("SIM_RST")
+SIM_CLK = Net("SIM_CLK")
+RF_MOD = Net("RF_MOD")
+RF_ANT = Net("RF_ANT")
+
+GNSS_TXD = Net("GNSS_TXD")
+GNSS_RXD = Net("GNSS_RXD")
+GNSS_PPS = Net("GNSS_PPS")
+GNSS_RF = Net("GNSS_RF")
+GNSS_BIAS = Net("GNSS_BIAS")
+
+I2C_SCL = Net("I2C_SCL")
+I2C_SDA = Net("I2C_SDA")
+SWDIO = Net("SWDIO")
+SWCLK = Net("SWCLK")
+NRST = Net("NRST")
+BOOT0 = Net("BOOT0")
+LED_K = Net("LED_K")
+LED_A = Net("LED_A")
+
+# USB-C, charging only. 5.1 k on each CC line asks the source for 5 V.
+Component(
+    name="J_USB",
+    symbol=Symbol(library="parts/USB_C_Receptacle_PowerOnly_6P.kicad_sym"),
+    part=Part(mpn="USB4125-GF-A", manufacturer="GCT"),
+    prefix="J",
+    pins={"VBUS": VBUS, "GND": GND, "SHIELD": GND, "CC1": CC1, "CC2": CC2},
+)
+Resistor(name="R_CC1", value="5.1kohm", package="0402", P1=CC1, P2=GND)
+Resistor(name="R_CC2", value="5.1kohm", package="0402", P1=CC2, P2=GND)
+
+# LiPo charger. PROG 2 k sets 500 mA (MCP73831 datasheet: I = 1000 V / R).
+Component(
+    name="CHARGER",
+    symbol=Symbol(library="parts/MCP73831-2-OT.kicad_sym"),
+    part=Part(mpn="MCP73831T-2ACI/OT", manufacturer="Microchip"),
+    pins={"V_{DD}": VBUS, "V_{BAT}": BAT, "V_{SS}": GND, "PROG": CHG_PROG, "STAT": CHG_STAT},
+)
+Resistor(name="R_CHG_PROG", value="2kohm", package="0402", P1=CHG_PROG, P2=GND)
+Capacitor(name="C_CHG_IN", value="4.7uF", package="0603", P1=VBUS, P2=GND)
+Capacitor(name="C_CHG_BAT", value="4.7uF", package="0603", P1=BAT, P2=GND)
+Resistor(name="R_CHG_LED", value="1kohm", package="0402", P1=VBUS, P2=CHG_LED)
+Led(name="LED_CHG", package="0603", color="orange", A=CHG_LED, K=CHG_STAT)
+
+Component(
+    name="J_BAT",
+    symbol=Symbol(library="parts/Conn_01x02.kicad_sym"),
+    part=Part(mpn="S2B-PH-K-S", manufacturer="JST"),
+    prefix="J",
+    pins={"Pin_1": BAT, "Pin_2": GND},
+)
+
+# Battery voltage to the MCU ADC: 4.2 V * 470k / (1M + 470k) = 1.34 V
+Resistor(name="R_VBAT_TOP", value="1Mohm", package="0402", P1=BAT, P2=VBAT_SENSE)
+Resistor(name="R_VBAT_BOT", value="470kohm", package="0402", P1=VBAT_SENSE, P2=GND)
+Capacitor(name="C_VBAT_SENSE", value="100nF", package="0402", P1=VBAT_SENSE, P2=GND)
+
+# Regulators: 3.3 V for the module supply (BC66 VBAT range 2.1 V to 3.63 V), 1.8 V for logic
+Component(
+    name="REG_MOD",
+    symbol=Symbol(library="parts/AP2112K-3.3.kicad_sym"),
+    part=Part(mpn="AP2112K-3.3TRG1", manufacturer="Diodes Incorporated"),
+    pins={"VIN": BAT, "EN": BAT, "GND": GND, "VOUT": V_MOD},
+)
+Capacitor(name="C_REG_MOD_IN", value="1uF", package="0603", P1=BAT, P2=GND)
+Capacitor(name="C_REG_MOD_OUT", value="1uF", package="0603", P1=V_MOD, P2=GND)
+Component(
+    name="REG_1V8",
+    symbol=Symbol(library="parts/AP2112K-1.8.kicad_sym"),
+    part=Part(mpn="AP2112K-1.8TRG1", manufacturer="Diodes Incorporated"),
+    pins={"VIN": BAT, "EN": BAT, "GND": GND, "VOUT": V18},
+)
+Capacitor(name="C_REG_1V8_IN", value="1uF", package="0603", P1=BAT, P2=GND)
+Capacitor(name="C_REG_1V8_OUT", value="1uF", package="0603", P1=V18, P2=GND)
+
+# NB-IoT module
+Component(
+    name="MODEM",
+    symbol=Symbol(library="parts/BC66.kicad_sym"),
+    part=Part(mpn="BC66NB-04-STD", manufacturer="Quectel"),
+    pins={
+        "VBAT_BB": V_MOD,
+        "VBAT_RF": V_MOD,
+        "GND": GND,
+        "VDD_EXT": VDD_EXT,
+        "SIM_VDD": SIM_VDD,
+        "SIM_GND": GND,
+        "SIM_DATA": SIM_DATA,
+        "SIM_RST": SIM_RST,
+        "SIM_CLK": SIM_CLK,
+        "TXD": MOD_TXD,
+        "RXD": MOD_RXD,
+        "TXD_DBG": DBG_TXD,
+        "RXD_DBG": DBG_RXD,
+        "RI": MOD_RI,
+        "PWRKEY": PWRKEY,
+        "~{RESET}": MOD_RESET,
+        "PSM_EINT": PSM_EINT,
+        "RF_ANT": RF_MOD,
+        "NETLIGHT": NotConnected(),
+        "TXD_AUX": NotConnected(),
+        "RXD_AUX": NotConnected(),
+        "SPI_MISO": NotConnected(),
+        "SPI_MOSI": NotConnected(),
+        "SPI_SCLK": NotConnected(),
+        "SPI_CS": NotConnected(),
+        "ADC0": NotConnected(),
+    },
+)
+Capacitor(name="C_MOD_BULK", value="22uF", package="0805", P1=V_MOD, P2=GND)
+Capacitor(name="C_MOD_100N", value="100nF", package="0402", P1=V_MOD, P2=GND)
+Capacitor(name="C_MOD_100P", value="100pF", package="0402", P1=V_MOD, P2=GND)
+Capacitor(name="C_MOD_22P", value="22pF", package="0402", P1=V_MOD, P2=GND)
+Capacitor(name="C_VDD_EXT", value="100nF", package="0402", P1=VDD_EXT, P2=GND)
+
+# PWRKEY, RESET and PSM_EINT are active low. Open-collector drivers keep the 1.8 V MCU
+# isolated from the module's own pull-ups.
+Component(
+    name="Q_PWRKEY",
+    symbol=Symbol(library="parts/MMBT3904.kicad_sym"),
+    part=Part(mpn="MMBT3904", manufacturer="onsemi"),
+    prefix="Q",
+    pins={"C": PWRKEY, "E": GND, "B": PWRKEY_B},
+)
+Resistor(name="R_PWRKEY_B", value="4.7kohm", package="0402", P1=PWRKEY_CTL, P2=PWRKEY_B)
+Resistor(name="R_PWRKEY_PD", value="47kohm", package="0402", P1=PWRKEY_B, P2=GND)
+Component(
+    name="Q_RESET",
+    symbol=Symbol(library="parts/MMBT3904.kicad_sym"),
+    part=Part(mpn="MMBT3904", manufacturer="onsemi"),
+    prefix="Q",
+    pins={"C": MOD_RESET, "E": GND, "B": RESET_B},
+)
+Resistor(name="R_RESET_B", value="4.7kohm", package="0402", P1=RESET_CTL, P2=RESET_B)
+Resistor(name="R_RESET_PD", value="47kohm", package="0402", P1=RESET_B, P2=GND)
+Component(
+    name="Q_PSM",
+    symbol=Symbol(library="parts/MMBT3904.kicad_sym"),
+    part=Part(mpn="MMBT3904", manufacturer="onsemi"),
+    prefix="Q",
+    pins={"C": PSM_EINT, "E": GND, "B": PSM_B},
+)
+Resistor(name="R_PSM_B", value="4.7kohm", package="0402", P1=PSM_CTL, P2=PSM_B)
+Resistor(name="R_PSM_PD", value="47kohm", package="0402", P1=PSM_B, P2=GND)
+
+# SIM (micro-SIM). ESD protection on the SIM lines is not fitted in rev A.
+Component(
+    name="J_SIM",
+    symbol=Symbol(library="parts/SIM_Card_Shielded.kicad_sym"),
+    part=Part(mpn="SF53S006VCBR2000", manufacturer="JAE"),
+    prefix="J",
+    pins={
+        "VCC": SIM_VDD,
+        "GND": GND,
+        "RST": SIM_RST,
+        "CLK": SIM_CLK,
+        "I/O": SIM_DATA,
+        "VPP": NotConnected(),
+        "SH": GND,
+    },
+)
+Capacitor(name="C_SIM", value="100nF", package="0402", P1=SIM_VDD, P2=GND)
+
+# Antenna feed with a pi matching network: series 0 ohm fitted, shunt parts left unfitted.
+Capacitor(name="C_ANT_SHUNT_MOD", value="1pF", package="0402", P1=RF_MOD, P2=GND, dnp=True)
+Resistor(name="R_ANT_SERIES", value="0ohm", package="0402", P1=RF_MOD, P2=RF_ANT)
+Capacitor(name="C_ANT_SHUNT_ANT", value="1pF", package="0402", P1=RF_ANT, P2=GND, dnp=True)
+Component(
+    name="J_ANT_NB",
+    symbol=Symbol(library="parts/Conn_Coaxial.kicad_sym"),
+    part=Part(mpn="U.FL-R-SMT-1(10)", manufacturer="Hirose"),
+    prefix="J",
+    pins={"In": RF_ANT, "Ext": GND},
+)
+
+# GNSS. VIO_SEL to GND selects 1.8 V I/O (verify against the MAX-M10S data sheet).
+Component(
+    name="GNSS",
+    symbol=Symbol(library="parts/MAX-M10S.kicad_sym"),
+    part=Part(mpn="MAX-M10S-00B", manufacturer="u-blox"),
+    pins={
+        "VCC": V18,
+        "VCC_IO": V18,
+        "V_BCKP": V18,
+        "GND": GND,
+        "VIO_SEL": GND,
+        "VCC_RF": GNSS_VRF,
+        "RF_IN": GNSS_RF,
+        "TXD": GNSS_TXD,
+        "RXD": GNSS_RXD,
+        "TIMEPULSE": GNSS_PPS,
+        "LNA_EN": NotConnected(),
+        "SDA": NotConnected(),
+        "SCL": NotConnected(),
+        "~{SAFEBOOT}": NotConnected(),
+        "~{RESET}": NotConnected(),
+        "EXTINT": NotConnected(),
+    },
+)
+Capacitor(name="C_GNSS_1", value="100nF", package="0402", P1=V18, P2=GND)
+Capacitor(name="C_GNSS_2", value="1uF", package="0402", P1=V18, P2=GND)
+# Bias for an active antenna: VCC_RF through 10 ohm and 27 nH onto the RF line.
+Resistor(name="R_GNSS_BIAS", value="10ohm", package="0402", P1=GNSS_VRF, P2=GNSS_BIAS)
+Capacitor(name="C_GNSS_BIAS", value="10nF", package="0402", P1=GNSS_BIAS, P2=GND)
+Inductor(name="L_GNSS_BIAS", value="27nH", package="0402", P1=GNSS_BIAS, P2=GNSS_RF)
+Component(
+    name="J_ANT_GNSS",
+    symbol=Symbol(library="parts/Conn_Coaxial.kicad_sym"),
+    part=Part(mpn="U.FL-R-SMT-1(10)", manufacturer="Hirose"),
+    prefix="J",
+    pins={"In": GNSS_RF, "Ext": GND},
+)
+
+# MCU at 1.8 V
+Component(
+    name="MCU",
+    symbol=Symbol(library="parts/STM32L432KCUx.kicad_sym"),
+    part=Part(mpn="STM32L432KCU6", manufacturer="STMicroelectronics"),
+    pins={
+        "VDD": V18,
+        "VDDA": V18,
+        "VSS": GND,
+        "NRST": NRST,
+        "PH3": BOOT0,
+        "PA0": PWRKEY_CTL,
+        "PA1": VBAT_SENSE,
+        "PA2": GNSS_RXD,
+        "PA3": GNSS_TXD,
+        "PA4": RESET_CTL,
+        "PA6": PSM_CTL,
+        "PA7": MOD_RI,
+        "PA8": GNSS_PPS,
+        "PA9": MOD_RXD,
+        "PA10": MOD_TXD,
+        "PA13": SWDIO,
+        "PA14": SWCLK,
+        "PB0": LED_K,
+        "PB6": I2C_SCL,
+        "PB7": I2C_SDA,
+        "PA5": NotConnected(),
+        "PA11": NotConnected(),
+        "PA12": NotConnected(),
+        "PA15": NotConnected(),
+        "PB1": NotConnected(),
+        "PB3": NotConnected(),
+        "PB4": NotConnected(),
+        "PB5": NotConnected(),
+        "PC14": NotConnected(),
+        "PC15": NotConnected(),
+    },
+)
+Capacitor(name="C_MCU_1", value="100nF", package="0402", P1=V18, P2=GND)
+Capacitor(name="C_MCU_2", value="100nF", package="0402", P1=V18, P2=GND)
+Capacitor(name="C_MCU_BULK", value="4.7uF", package="0603", P1=V18, P2=GND)
+Capacitor(name="C_NRST", value="100nF", package="0402", P1=NRST, P2=GND)
+Resistor(name="R_BOOT0", value="10kohm", package="0402", P1=BOOT0, P2=GND)
+Resistor(name="R_SCL", value="4.7kohm", package="0402", P1=I2C_SCL, P2=V18)
+Resistor(name="R_SDA", value="4.7kohm", package="0402", P1=I2C_SDA, P2=V18)
+
+# Status LED from the 3.3 V rail (a red LED will not light from 1.8 V). The MCU pin sinks it, open drain.
+Resistor(name="R_LED", value="1kohm", package="0402", P1=V_MOD, P2=LED_A)
+Led(name="LED_STATUS", package="0603", color="red", A=LED_A, K=LED_K)
+
+# Temperature sensor at I2C 0x48
+Component(
+    name="TMP",
+    symbol=Symbol(library="parts/TMP117xxDRV.kicad_sym"),
+    part=Part(mpn="TMP117AIDRVR", manufacturer="Texas Instruments"),
+    pins={
+        "V+": V18,
+        "GND": GND,
+        "ADD0": GND,
+        "SCL": I2C_SCL,
+        "SDA": I2C_SDA,
+        "ALERT": NotConnected(),
+    },
+)
+Capacitor(name="C_TMP", value="100nF", package="0402", P1=V18, P2=GND)
+
+PinHeader(name="J_SWD", pins=5, rows=1, mount="THT", pitch="2.54mm", P1=V18, P2=SWDIO, P3=SWCLK, P4=NRST, P5=GND)
+PinHeader(
+    name="J_DBG",
+    pins=6,
+    rows=1,
+    mount="THT",
+    pitch="2.54mm",
+    P1=VDD_EXT,
+    P2=MOD_TXD,
+    P3=MOD_RXD,
+    P4=DBG_TXD,
+    P5=DBG_RXD,
+    P6=GND,
+)
+
+Board(name="iot_node", layers=4, path="eda")

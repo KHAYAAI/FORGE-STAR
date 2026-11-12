@@ -47,3 +47,7 @@ FREEROUTING_JAR=/path/to/freerouting-1.9.0.jar python3 hardware/boards/pib/pib.p
 | Mechanical fit | **FreeCAD** + KiCad StepUp | Check board against the CubeSat frame |
 
 What neither heypcb nor this pipeline does: radiation qualification, thermal design, RF tuning on a vector network analyser, and bus integration. Those stay with the engineers and the bus partner.
+
+## Zener trial
+
+`hardware/zener/` holds a trial of Diode's Zener language and `pcb` tool: the payload interface board ported from SKiDL, and a new IoT test device. See [`zener/README.md`](zener/README.md).

@@ -1,0 +1,4 @@
+[board]
+name = "iot_node"
+path = "iot_node.zen"
+description = "FORGE STAR NB-IoT test device (lab test-bed and field trials)"
