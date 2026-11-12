@@ -87,7 +87,7 @@ const MODELS=[
   key:[]}
 ];
 const stage=document.getElementById("stage"),msg=document.getElementById("msg"),nav=document.getElementById("nav"),plate=document.getElementById("plate"),scaleEl=document.getElementById("scale");
-let renderer,scene,camera,controls,current=null,home=null;
+let renderer,scene,camera,controls,current=null,home=null,want=null;
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 function buildNav(){
   let g="";
@@ -130,12 +130,17 @@ function frame(obj,unit,view){
 }
 function show(id){
   const m=MODELS.find(x=>x.id===id)||MODELS[1];showPlate(m);if(!renderer)return;
-  msg.hidden=false;msg.textContent="Loading model…";
-  new THREE.GLTFLoader().load("models/"+m.file,g=>{
+  want=m.id;msg.hidden=false;msg.textContent="Loading model…";
+  const fail=()=>{msg.hidden=false;msg.textContent="Could not load this model."};
+  fetch("models/"+m.file.replace(".glb",".json")).then(r=>r.json()).then(j=>{
+    const bin=atob(j.glb),buf=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)buf[i]=bin.charCodeAt(i);
+    if(want!==m.id)return;
+    new THREE.GLTFLoader().parse(buf.buffer,"",g=>{
     if(current)scene.remove(current);current=g.scene;
     current.traverse(o=>{if(o.isMesh&&o.material){o.material.side=THREE.DoubleSide;if(o.material.metalness!==undefined){o.material.metalness=Math.min(o.material.metalness,0.35);o.material.roughness=Math.max(o.material.roughness,0.55)}}});
     scene.add(current);frame(current,m.unit,m.view);msg.hidden=true;
-  },undefined,()=>{msg.textContent="Could not load this model."});
+    },fail);
+  }).catch(fail);
 }
 buildNav();
 if(init()){
