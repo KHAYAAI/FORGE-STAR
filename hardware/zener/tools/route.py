@@ -101,7 +101,7 @@ def main() -> int:
     # each pcbnew step runs in its own process (see place.py)
     steps = [
         [sys.executable, __file__, str(bdir), "export"],
-        ["java", "-jar", jar, "-de", str(dsn), "-do", str(ses), "-mp", "100", "-host-mode", "cli"],
+        ["java", "-jar", jar, "-de", str(dsn), "-do", str(ses), "-mp", "40", "-oit", "1", "-host-mode", "cli"],
         [sys.executable, __file__, str(bdir), "import"],
         [sys.executable, __file__, str(bdir), "stitch"],
         [sys.executable, __file__, str(bdir), "fill"],
