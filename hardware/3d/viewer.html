@@ -1,0 +1,147 @@
+<title>FORGE STAR Hardware in 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one hangar screen. Model list on the left, the 3D stage in the middle, a data plate on the right; stacks on phones. */
+:root{
+  --bg:#0b0d12; --panel:#12151c; --line:#232834; --fg:#e9ebf0; --muted:#8c93a3; --ember:#ff5a1f; --gold:#d4a838; --stage:#06070a;
+  --display:"Space Grotesk","Segoe UI",system-ui,sans-serif; --body:"Inter","Segoe UI",system-ui,sans-serif; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding-block:20px 32px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px}
+h1{font-family:var(--display);font-size:1.5rem;font-weight:700;margin:0;letter-spacing:-.01em}
+h1 b{color:var(--ember);font-weight:700}
+header p{margin:0;color:var(--muted);font-size:.9rem}
+.grid{display:grid;grid-template-columns:220px minmax(0,1fr) 300px;gap:16px;align-items:start}
+nav{display:flex;flex-direction:column;gap:6px}
+nav .group{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:10px 0 2px}
+nav .group:first-child{margin-top:0}
+nav button{all:unset;box-sizing:border-box;cursor:pointer;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font-weight:500;font-size:.92rem;display:flex;flex-direction:column;gap:2px}
+nav button small{color:var(--muted);font-family:var(--mono);font-size:.72rem}
+nav button:hover{border-color:#3a4254}
+nav button:focus-visible,.tools button:focus-visible{outline:2px solid var(--ember);outline-offset:2px}
+nav button[aria-pressed="true"]{border-color:var(--ember);box-shadow:inset 3px 0 0 var(--ember)}
+.stage{position:relative;background:var(--stage);border:1px solid var(--line);border-radius:4px;aspect-ratio:4/3;max-width:100%;overflow:hidden;min-width:0}
+.stage canvas{display:block;width:100%;height:100%;touch-action:none}
+.stage .msg[hidden]{display:none}
+.stage .msg{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-family:var(--mono);font-size:.85rem;text-align:center;padding:16px}
+.tools{position:absolute;left:10px;bottom:10px;display:flex;gap:8px}
+.tools button{all:unset;cursor:pointer;font-family:var(--mono);font-size:.72rem;padding:6px 10px;border:1px solid var(--line);border-radius:3px;background:rgba(18,21,28,.85);color:var(--fg)}
+.tools button:hover{border-color:var(--ember)}
+.hint{position:absolute;right:10px;bottom:12px;font-family:var(--mono);font-size:.7rem;color:var(--muted)}
+.plate{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.plate .tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--ember)}
+.plate h2{font-family:var(--display);font-size:1.2rem;margin:0;text-wrap:balance}
+.plate p{margin:0;color:#c5c9d3;font-size:.9rem}
+dl{margin:0;display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;font-size:.84rem}
+dt{color:var(--muted)}
+dd{margin:0;font-family:var(--mono);font-size:.8rem;text-align:right;font-variant-numeric:tabular-nums}
+.note{border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:.8rem}
+.key{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:.78rem;color:var(--muted)}
+.key i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+footer{color:var(--muted);font-size:.8rem}
+@media (max-width:980px){.grid{grid-template-columns:minmax(0,1fr)}nav{flex-direction:row;flex-wrap:wrap}nav .group{flex-basis:100%}nav button{flex:1 1 150px}}
+</style>
+<div class="wrap">
+  <header>
+    <h1>FORGE <b>STAR</b> hardware in 3D</h1>
+    <p>Three satellites and two circuit boards. Drag to turn, scroll or pinch to zoom.</p>
+  </header>
+  <div class="grid">
+    <nav id="nav" aria-label="Models"></nav>
+    <div class="stage" id="stage">
+      <div class="msg" id="msg">Loading model…</div>
+      <div class="tools"><button id="spin" type="button">Pause spin</button><button id="reset" type="button">Reset view</button></div>
+      <div class="hint" id="scale"></div>
+    </div>
+    <aside class="plate" id="plate" aria-live="polite"></aside>
+  </div>
+  <footer>Concept models with illustrative sizes. The satellite bus will come from a supplier; the boards are first drafts that still need routing and engineer review. November 2026.</footer>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script>
+const MODELS=[
+ {id:"iot-demo",view:[0.6,-0.35,0.7],group:"Satellites",file:"sat-demo-6u.glb",name:"Demonstrator",sub:"6U · Stage 1",tag:"Stage 1 · 1–2 satellites",title:"Demonstrator satellite (6U)",
+  text:"Our first own satellite. It proves store-and-forward IoT messaging and ship tracking in orbit before we build more.",
+  spec:[["Body","366 × 226 × 100 mm"],["Deployed span","about 0.83 × 0.68 m"],["Sensor link","S-band 2×2 patch"],["Ship tracking","2 VHF antennas"],["Downlink","X-band patch"],["Orbit","550 km"]],
+  key:[["#d4a838","Antennas"],["#0d1a52","Solar cells"],["#ff5a1f","Our payload"]]},
+ {id:"iot-12u",view:[0.6,-0.3,0.72],group:"Satellites",file:"sat-iot-12u.glb",name:"IoT satellite",sub:"12U · Stages 2–3",tag:"Stages 2–3 · 6 to 48 satellites",title:"Operational IoT satellite (12U)",
+  text:"The workhorse of the IoT network. A shaped-beam antenna gives even coverage across its footprint, and four wings supply the extra power it needs.",
+  spec:[["Body","366 × 226 × 226 mm"],["Deployed span","about 1.3 × 1.1 m"],["Sensor link","S-band isoflux antenna"],["Ship tracking","4 VHF antennas"],["Downlink","X-band 4×4 patch"],["Fleet","42 at 45° + 6 at 10°"]],
+  key:[["#d4a838","Antennas"],["#0d1a52","Solar cells"],["#ff5a1f","Our payload"]]},
+ {id:"broadband",view:[0.75,-0.22,0.7],group:"Satellites",file:"sat-broadband-concept.glb",name:"Broadband satellite",sub:"Concept · Stage 5",tag:"Stage 5 · hundreds of satellites",title:"Broadband satellite (concept)",
+  text:"The long-term goal: internet for homes, schools, clinics and government. Flat antenna panels steer beams to user dishes, two dishes link to gateways, and lasers link satellites to each other.",
+  spec:[["Bus","2.6 × 1.3 × 0.18 m"],["Solar wing","about 2.4 × 7.6 m"],["User link","Ku-band phased arrays"],["Gateway link","2 Ka-band dishes"],["Cross links","4 laser terminals"],["Class","about 300 kg"]],
+  key:[["#d4a838","User antennas"],["#ebebe6","Gateway dishes"],["#0d1a52","Solar cells"]]},
+ {id:"board-pib",unit:1000,view:[0.35,0.75,0.55],group:"Circuit boards",file:"board-pib.glb",name:"Payload interface board",sub:"58 × 40 mm",tag:"Flies on the satellite",title:"Payload interface board",
+  text:"Connects our radio payload to the satellite bus. It runs the store-and-forward software, switches the radio's power and reports current and temperature.",
+  spec:[["Size","58 × 40 mm"],["Layers","4"],["Components","35"],["Bus link","CAN"],["Status","Placed, part routed"]],
+  key:[]},
+ {id:"board-iot",unit:1000,view:[0.35,0.75,0.55],group:"Circuit boards",file:"board-iot_node.glb",name:"IoT test device",sub:"84 × 45 mm",tag:"On the ground",title:"IoT test device",
+  text:"A battery-powered sensor node for the lab test-bed and customer trials. It has an NB-IoT modem, GNSS, a SIM slot and USB-C charging.",
+  spec:[["Size","84 × 45 mm"],["Layers","4"],["Components","71"],["Power","1-cell LiPo, USB-C"],["Status","Placed, part routed"]],
+  key:[]}
+];
+const stage=document.getElementById("stage"),msg=document.getElementById("msg"),nav=document.getElementById("nav"),plate=document.getElementById("plate"),scaleEl=document.getElementById("scale");
+let renderer,scene,camera,controls,current=null,home=null;
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function buildNav(){
+  let g="";
+  MODELS.forEach(m=>{
+    if(m.group!==g){g=m.group;const d=document.createElement("div");d.className="group";d.textContent=g;nav.appendChild(d)}
+    const b=document.createElement("button");b.type="button";b.id="pick-"+m.id;b.innerHTML=esc(m.name)+"<small>"+esc(m.sub)+"</small>";
+    b.addEventListener("click",()=>{location.hash=m.id;show(m.id)});nav.appendChild(b);
+  });
+}
+function showPlate(m){
+  plate.innerHTML='<div class="tag">'+esc(m.tag)+'</div><h2>'+esc(m.title)+'</h2><p>'+esc(m.text)+'</p><dl>'+
+    m.spec.map(r=>"<dt>"+esc(r[0])+"</dt><dd>"+esc(r[1])+"</dd>").join("")+"</dl>"+
+    (m.key.length?'<div class="key">'+m.key.map(k=>'<span><i style="background:'+k[0]+'"></i>'+esc(k[1])+"</span>").join("")+"</div>":"")+
+    '<div class="note">Illustrative. Not an engineering design.</div>';
+  MODELS.forEach(x=>document.getElementById("pick-"+x.id).setAttribute("aria-pressed",x.id===m.id?"true":"false"));
+}
+function init(){
+  try{renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true})}catch(e){msg.textContent="This browser cannot show 3D here. The pictures and STEP files are in the repository.";return false}
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));renderer.outputEncoding=THREE.sRGBEncoding;
+  stage.insertBefore(renderer.domElement,stage.firstChild);
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x06070a);
+  camera=new THREE.PerspectiveCamera(35,4/3,0.001,1000);
+  scene.add(new THREE.HemisphereLight(0xdfe6ff,0x1a1c22,0.95));
+  const sun=new THREE.DirectionalLight(0xffffff,1.25);sun.position.set(3,5,4);scene.add(sun);
+  const fill=new THREE.DirectionalLight(0xff9a6a,0.35);fill.position.set(-4,-2,-3);scene.add(fill);
+  controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.autoRotate=!window.matchMedia("(prefers-reduced-motion: reduce)").matches;controls.autoRotateSpeed=1.2;
+  document.getElementById("spin").textContent=controls.autoRotate?"Pause spin":"Spin";
+  const size=()=>{const w=stage.clientWidth,h=stage.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()};
+  size();new ResizeObserver(size).observe(stage);
+  (function loop(){requestAnimationFrame(loop);controls.update();renderer.render(scene,camera)})();
+  return true;
+}
+function frame(obj,unit,view){
+  const box=new THREE.Box3().setFromObject(obj),c=box.getCenter(new THREE.Vector3()),s=box.getSize(new THREE.Vector3());
+  obj.position.sub(c);
+  const r=Math.max(s.x,s.y,s.z)*0.5,d=r/Math.tan(camera.fov*Math.PI/360)*1.25;
+  camera.near=d/200;camera.far=d*50;camera.updateProjectionMatrix();
+  const v=view||[0.62,0.42,0.66];home=new THREE.Vector3(d*v[0],d*v[1],d*v[2]);camera.position.copy(home);controls.target.set(0,0,0);controls.update();
+  const mm=Math.max(s.x,s.y,s.z)*(unit||1);scaleEl.textContent="longest side "+(mm>=1000?(mm/1000).toFixed(1)+" m":mm.toFixed(0)+" mm");
+}
+function show(id){
+  const m=MODELS.find(x=>x.id===id)||MODELS[1];showPlate(m);if(!renderer)return;
+  msg.hidden=false;msg.textContent="Loading model…";
+  new THREE.GLTFLoader().load("models/"+m.file,g=>{
+    if(current)scene.remove(current);current=g.scene;
+    current.traverse(o=>{if(o.isMesh&&o.material){o.material.side=THREE.DoubleSide;if(o.material.metalness!==undefined){o.material.metalness=Math.min(o.material.metalness,0.35);o.material.roughness=Math.max(o.material.roughness,0.55)}}});
+    scene.add(current);frame(current,m.unit,m.view);msg.hidden=true;
+  },undefined,()=>{msg.textContent="Could not load this model."});
+}
+buildNav();
+if(init()){
+  document.getElementById("spin").addEventListener("click",e=>{controls.autoRotate=!controls.autoRotate;e.target.textContent=controls.autoRotate?"Pause spin":"Spin"});
+  document.getElementById("reset").addEventListener("click",()=>{if(home){camera.position.copy(home);controls.target.set(0,0,0)}});
+}
+const start=()=>show((location.hash||"").slice(1)||"iot-12u");
+window.addEventListener("hashchange",start);start();
+</script>
