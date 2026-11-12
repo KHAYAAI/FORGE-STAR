@@ -1,0 +1,2 @@
+     15 [starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
+     37 [unconnected_items]: Missing connection between items
