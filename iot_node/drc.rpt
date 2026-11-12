@@ -1,48 +1,12 @@
 ** Drc report for iot_node.kicad_pcb **
-** Created on 2026-11-12T14:22:43 **
+** Created on 2026-11-12T14:24:32 **
 ** Report includes: Errors **
 
-** Found 10 DRC violations **
-[starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
-    Local override; error
-    @(100.0000 mm, 100.0000 mm): Zone 'GND_F.Cu' [GND] on F.Cu, priority 0
-    @(163.7500 mm, 132.4375 mm): Pad 16 [GND] of U3 on F.Cu
-[starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
-    Local override; error
-    @(100.0000 mm, 100.0000 mm): Zone 'GND_F.Cu' [GND] on F.Cu, priority 0
-    @(154.4800 mm, 137.5000 mm): Pad 2 [GND] of C22 on F.Cu
+** Found 1 DRC violations **
 [starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
     Local override; error
     @(100.0000 mm, 100.0000 mm): Zone 'GND_F.Cu' [GND] on F.Cu, priority 0
     @(152.5100 mm, 137.5000 mm): Pad 2 [GND] of R17 on F.Cu
-[starved_thermal]: Thermal relief connection to zone incomplete (layer F.Cu; zone min spoke count 2; actual 1)
-    Local override; error
-    @(100.0000 mm, 100.0000 mm): Zone 'GND_F.Cu' [GND] on F.Cu, priority 0
-    @(151.9800 mm, 109.0000 mm): Pad 2 [GND] of C20 on F.Cu
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3434 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(116.3034 mm, 100.4234 mm): Track [GND] on F.Cu, length 7.1026 mm
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3434 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(118.0000 mm, 102.1200 mm): Track [GND] on F.Cu, length 2.3994 mm
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3434 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(109.2008 mm, 100.4234 mm): Track [GND] on F.Cu, length 1.4453 mm
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3553 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(133.3039 mm, 100.4353 mm): Track [DBG_TXD] on F.Cu, length 19.1770 mm
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3553 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(152.4809 mm, 100.4353 mm): Track [DBG_TXD] on F.Cu, length 8.1387 mm
-[copper_edge_clearance]: Board edge clearance violation (board setup constraints edge clearance 0.4000 mm; actual 0.3553 mm)
-    Rule: board setup constraints edge; error
-    @(100.0000 mm, 100.0000 mm): Rectangle on Edge.Cuts
-    @(127.1000 mm, 106.6392 mm): Track [DBG_TXD] on F.Cu, length 8.7736 mm
 
 ** Found 0 unconnected pads **
 
