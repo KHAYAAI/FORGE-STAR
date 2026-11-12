@@ -11,7 +11,7 @@ Ref,Val,Package,PosX,PosY,Rot,Side
 "C10","100nF 6.3V","C_0603_1608Metric",133.000000,-134.000000,0.000000,top
 "FID1","Fiducial","Fiducial_1mm_Mask2mm",109.000000,-103.000000,0.000000,top
 "FID2","Fiducial","Fiducial_1mm_Mask2mm",150.000000,-136.500000,0.000000,top
-"FID3","Fiducial","Fiducial_1mm_Mask2mm",109.000000,-137.000000,0.000000,top
+"FID3","Fiducial","Fiducial_1mm_Mask2mm",103.500000,-130.500000,0.000000,top
 "J1","2.54mm 5 x 1 THT Vertical Male","PinHeader_1x05_P2.54mm_Vertical",107.000000,-114.000000,0.000000,top
 "J2","2.54mm 5 x 1 THT Vertical Male","PinHeader_1x05_P2.54mm_Vertical",151.000000,-114.000000,0.000000,top
 "J3","2.54mm 5 x 1 THT Vertical Male","PinHeader_1x05_P2.54mm_Vertical",120.000000,-105.000000,90.000000,top
