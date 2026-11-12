@@ -6,7 +6,7 @@
 # owner "TBD" = not yet assigned.
 
 start: 2026-12-01
-today: 2026-11-02     # override when updating; tracker also accepts --today
+today: 2026-11-12     # override when updating; tracker also accepts --today
 
 workstreams:
   spectrum: "Permission to transmit (ICASA + ITU)"
@@ -22,7 +22,10 @@ items:
   # --- Permission to transmit ---
   - {id: S1, ws: spectrum, title: "Brief specialist spectrum counsel; agree bands (S-band MSS/NB-IoT NTN, VHF AIS, X-band feeder)", start: 0, months: 2, owner: TBD, status: todo}
   - {id: S2, ws: spectrum, title: "ICASA pre-application meeting (NGSO IoT/AIS, test licence for lab)", start: 1, months: 2, depends: [S1], owner: TBD, status: todo, reverify: true}
-  - {id: S3, ws: spectrum, title: "ICASA test/experimental licence for cabled + OTA lab work", start: 2, months: 4, depends: [S2], owner: TBD, status: todo, reverify: true}
+  - {id: S3, ws: spectrum, title: "ICASA test/experimental licence for over-the-air lab work (Regulation 40)", start: 2, months: 4, depends: [S2], owner: TBD, status: todo, reverify: true,
+     note: "Lasts at most 3 months and covers at most 100 stations; an extension is a new application. Apply just before over-the-air tests. Cabled lab work is planned to start without it (counsel to confirm)."}
+  - {id: S9, ws: spectrum, title: "Operating route until ICASA opens I-ECNS applications: partner with an existing I-ECNS/I-ECS licensee", start: 1, months: 5, depends: [S1], owner: TBD, status: todo, reverify: true,
+     note: "ICASA's June 2026 notice: a constellation needs I-ECS, I-ECNS and RFS licences. I-ECNS can only be applied for after an Invitation to Apply. Timing is outside our control."}
   - {id: S4, ws: spectrum, title: "Prepare and lodge NGSO network filing via ICASA to ITU (24–100 sats)", start: 3, months: 6, depends: [S2], owner: TBD, status: todo, reverify: true,
      note: "Filing date starts the ITU clock: bring-into-use within 7 years, then deployment milestones (Res. 35: 10% / 50% / 100%). Re-verify."}
   - {id: S5, ws: spectrum, title: "ITU coordination with affected operators", start: 9, months: 24, depends: [S4], owner: TBD, status: todo, reverify: true}
@@ -52,8 +55,10 @@ items:
 
   # --- Proof in the lab ---
   - {id: L1, ws: lab, title: "Buy lab kit (SDRs, GPSDO, NTN dev kits) — docs/ntn-testbed-plan.md", start: 4, months: 1, depends: [F1], owner: TBD, status: todo}
-  - {id: L2, ws: lab, title: "12-week NB-IoT NTN test-bed (attach, Doppler, link budget, store-and-forward)", start: 5, months: 3, depends: [L1, S3], owner: TBD, status: todo}
-  - {id: L3, ws: lab, title: "Antenna decision: patch + deep coverage for demo; isoflux for Stage 2 (sim/antenna_trade.py)", start: 6, months: 2, depends: [L2], owner: TBD, status: todo}
+  - {id: L2, ws: lab, title: "12-week NB-IoT NTN test-bed, cabled (attach, Doppler, link budget, store-and-forward)", start: 5, months: 3, depends: [L1], owner: TBD, status: todo}
+  - {id: L4, ws: lab, title: "Fix the antenna and link budget: gain to match beamwidth, coverage on the downlink mask, per-pass capacity", start: 0, months: 2, owner: TBD, status: todo,
+     note: "Independent review, Nov 2026: a 14 dBi patch cannot have a 30 degree half-beam; the downlink, not the uplink, sets coverage; no capacity model. Satellite count and capex depend on this."}
+  - {id: L3, ws: lab, title: "Antenna decision: patch + deep coverage for demo; isoflux for Stage 2 (sim/antenna_trade.py)", start: 6, months: 2, depends: [L2, L4], owner: TBD, status: todo}
 
   # --- Proof in orbit ---
   - {id: R1, ws: orbit, title: "Bus partner quotes and MoU (Dragonfly Aerospace / CubeSpace)", start: 1, months: 4, owner: TBD, status: todo}
@@ -62,7 +67,10 @@ items:
   - {id: R4, ws: orbit, title: "Own 6U–12U demonstrator launched; store-and-forward in orbit", start: 18, months: 12, depends: [R3, S6], owner: TBD, status: todo}
 
   # --- Payload hardware and bridging partners (see docs/brief.md and register V1–V7) ---
-  - {id: H1, ws: hardware, title: "Payload interface board to heypcb.ai: route, fab 5, bring up with libforge", start: 0, months: 2, owner: TBD, status: todo}
+  - {id: H1, ws: hardware, title: "Payload interface board: engineer review, fab 5, bring up with libforge", start: 0, months: 2, owner: TBD, status: doing,
+     note: "Nov 2026: designed in Zener and SKiDL, placed, autorouted in CI with every connection made. Not yet reviewed by an engineer or fabricated."}
+  - {id: H8, ws: hardware, title: "IoT test device board: finish routing, confirm NTN module pin map (Quectel CC660D-LS), review, fab", start: 0, months: 3, owner: TBD, status: doing, reverify: true,
+     note: "Nov 2026: schematic and placement done, routing in progress. Needed for the lab test-bed and customer trials."}
   - {id: H2, ws: hardware, title: "Hosted-payload RFQ to a host platform (Loft Orbital or D-Orbit) alongside the bus RFQ", start: 1, months: 3, owner: TBD, status: todo, reverify: true}
   - {id: H3, ws: hardware, title: "RF vendor quotes: S-band SDR + PA, X-band transmitter, S-band patch (EnduroSat, Alén, IQ Spacecom)", start: 1, months: 2, owner: TBD, status: todo, reverify: true}
   - {id: H4, ws: hardware, title: "SPENVIS radiation analysis for the 550 km 45°/10° orbits; parts selection", start: 1, months: 1, owner: TBD, status: todo}
