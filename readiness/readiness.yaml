@@ -102,3 +102,14 @@ scenarios:
     F3: {depends: [R3]}
     R3: {months: 10}
     V1: {months: 9}
+  all_parallel:
+    _label: "Everything in parallel: bridge money up front, patch antenna fixed now for the demo, host contract negotiated during the lab work"
+    F2: {depends: [O2, C1], start: 6}
+    L1: {depends: [], start: 1}
+    L2: {depends: [L1], start: 2}
+    H7: {depends: [R1, H2, H6, L2], start: 5, months: 1}
+    R2: {depends: [R1, H7], start: 6, months: 1}
+    R3: {depends: [R2], start: 7, months: 10}
+    R4: {depends: [R2, S6], start: 8, months: 12}
+    F3: {depends: [R3]}
+    V1: {months: 9}
