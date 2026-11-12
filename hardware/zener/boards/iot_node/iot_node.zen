@@ -380,4 +380,15 @@ PinHeader(
     P6=GND,
 )
 
+# Mounting holes (M2.5, grounded) and fiducials for pick-and-place
+MountingHole = Module("@stdlib/generics/MountingHole.zen")
+Fiducial = Module("@stdlib/generics/Fiducial.zen")
+MountingHole(name="H1", diameter="M2.5", P1=GND)
+MountingHole(name="H2", diameter="M2.5", P1=GND)
+MountingHole(name="H3", diameter="M2.5", P1=GND)
+MountingHole(name="H4", diameter="M2.5", P1=GND)
+Fiducial(name="FID1")
+Fiducial(name="FID2")
+Fiducial(name="FID3")
+
 Board(name="iot_node", layers=4, path="eda")

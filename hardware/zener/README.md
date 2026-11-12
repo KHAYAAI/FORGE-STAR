@@ -7,8 +7,8 @@ All designs here are first drafts with illustrative values. An electrical engine
 
 | Board | File | What it is | Status |
 |---|---|---|---|
-| Payload interface board (PIB) | `boards/pib/pib.zen` | Port of the SKiDL board: MCU, CAN to the bus, radio power switch, telemetry | Builds, 28 components |
-| IoT test device | `boards/iot_node/iot_node.zen` | Battery NB-IoT node with GNSS for the lab test-bed and field trials | Builds, 61 components |
+| Payload interface board (PIB) | `boards/pib/pib.zen` | Port of the SKiDL board: MCU, CAN to the bus, radio power switch, telemetry | Builds, 35 components |
+| IoT test device | `boards/iot_node/iot_node.zen` | Battery NB-IoT node with GNSS for the lab test-bed and field trials | Builds, 71 components |
 
 ## Use
 
@@ -42,8 +42,10 @@ FREEROUTING_JAR=... python3 tools/route.py boards/iot_node   # autoroute (not ye
 
 | Board | Size | Placement | Routing |
 |---|---|---|---|
-| Payload interface board | 50 x 36 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 51 connections open |
-| IoT test device | 72 x 45 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 101 connections open |
+| Payload interface board | 58 x 40 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 51 connections open |
+| IoT test device | 84 x 45 mm, 4 layers | Done, no placement errors in KiCad DRC | Not done: 101 connections open |
+
+Both boards have four grounded M2.5 mounting holes and three fiducials.
 
 3D pictures are in `docs/img/` (`pib-3d.png`, `iot_node-3d.png`) and 3D STEP files sit next to each board.
 Several chips show as bare pads because KiCad's 3D model library is not installed here.
@@ -66,6 +68,5 @@ Several chips show as bare pads because KiCad's 3D model library is not installe
 - **CC660D-LS pin map:** get the hardware design manual from Quectel and compare every pin.
 - **RF:** antenna traces need 50 ohm controlled impedance; the matching network values are placeholders that need
   measurement on a network analyser.
-- **Mounting holes and fiducials** are not on either board yet.
 - **Engineer review:** an electrical engineer must review schematic, placement and routing. The checks above are
   from public datasheet summaries, not a substitute for that review.
